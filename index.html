@@ -247,6 +247,12 @@ body {
 .dl-btn:hover { background:var(--pink); border-color:var(--pink); color:#fff; }
 .dl-btn.pdf { --accent-c: var(--pink); }
 .dl-btn.pptx { --accent-c: var(--yellow); }
+.load-btn {
+  flex:1; min-width:60px; background:var(--surface2); border:1px solid var(--border);
+  border-radius:8px; color:var(--text); font-family:'Space Mono',monospace; font-size:.6rem;
+  padding:6px 4px; cursor:pointer; text-align:center; transition:all .15s;
+}
+.load-btn:hover { background:var(--green); border-color:var(--green); color:#fff; }
 .gallery-empty {
   width:100%; text-align:center; color:var(--muted); padding:80px 0; font-size:.85rem;
   grid-column: 1/-1;
@@ -504,6 +510,10 @@ const doneEditingBtn = document.getElementById('doneEditingBtn');
 const shapeControls = document.getElementById('shapeControls');
 
 const colorMap = { black:'#111111', pink:'#ff2d78', yellow:'#ffe94a', blue:'#2d8bff', green:'#2dff9a' };
+
+// Template image for export
+let templateImg = new Image();
+templateImg.src = 'Beyond The Brush Template.png';
 
 // ═══════════════════════════════════════════════════════
 // RESIZE
@@ -1367,17 +1377,33 @@ async function saveArtwork() {
   offscreen.width = w; offscreen.height = h;
   const ctx = offscreen.getContext('2d');
 
-  // 1. Camera frame (video snapshot)
-  ctx.save();
-  ctx.scale(-1,1); ctx.translate(-w,0);
-  ctx.drawImage(videoEl, 0, 0, w, h);
-  ctx.restore();
+  // 1. Template image background
+  ctx.drawImage(templateImg, 0, 0, w, h);
 
-  // 2. Template overlay
-  ctx.drawImage(templateCanvas, 0, 0);
-
-  // 3. Drawing
+  // 2. Drawing
   ctx.drawImage(drawCanvas, 0, 0);
+
+  // 3. Shape items
+  state.shapeItems.filter(s => s.isPlaced).forEach(item => {
+    ctx.strokeStyle = item.color;
+    ctx.lineWidth = state.brushSize;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    if (item.type === 'square') {
+      const size = Math.max(item.width, item.height);
+      ctx.strokeRect(item.x, item.y, size, size);
+    } else if (item.type === 'rectangle') {
+      ctx.strokeRect(item.x, item.y, item.width, item.height);
+    } else if (item.type === 'triangle') {
+      ctx.beginPath();
+      ctx.moveTo(item.x + item.width / 2, item.y);
+      ctx.lineTo(item.x + item.width, item.y + item.height);
+      ctx.lineTo(item.x, item.y + item.height);
+      ctx.closePath();
+      ctx.stroke();
+    }
+  });
 
   // 4. Text items
   state.textItems.forEach(item => {
@@ -1391,7 +1417,35 @@ async function saveArtwork() {
 
   const dataURL = offscreen.toDataURL('image/png');
   const ts = new Date().toLocaleTimeString();
-  state.gallery.unshift({ dataURL, timestamp: ts, id: Date.now() });
+  
+  // Save full state for loading back
+  const drawingData = drawCanvas.toDataURL();
+  const textItemsData = state.textItems.map(item => ({
+    id: item.id,
+    text: item.text,
+    x: item.x,
+    y: item.y,
+    color: item.color
+  }));
+  const shapeItemsData = state.shapeItems.filter(s => s.isPlaced).map(item => ({
+    id: item.id,
+    type: item.type,
+    x: item.x,
+    y: item.y,
+    width: item.width,
+    height: item.height,
+    color: item.color,
+    isPlaced: item.isPlaced
+  }));
+  
+  state.gallery.unshift({ 
+    dataURL, 
+    timestamp: ts, 
+    id: Date.now(),
+    drawingData,
+    textItemsData,
+    shapeItemsData
+  });
   renderGallery();
   showToast('Saved to gallery! 🎨');
 }
@@ -1406,14 +1460,23 @@ function renderGallery() {
     const card = document.createElement('div');
     card.className = 'gallery-card';
     card.innerHTML = `
-      <img class="gallery-thumb" src="${item.dataURL}" alt="Artwork">
+      <img class="gallery-thumb" src="${item.dataURL}" alt="Artwork" data-id="${item.id}">
       <div class="gallery-actions">
+        <button class="load-btn" data-id="${item.id}">📂 Load</button>
         <button class="dl-btn" data-id="${item.id}" data-type="png">⬇ PNG</button>
         <button class="dl-btn pdf" data-id="${item.id}" data-type="pdf">⬇ PDF</button>
         <button class="dl-btn pptx" data-id="${item.id}" data-type="pptx">⬇ PPTX</button>
       </div>
     `;
     galleryGrid.appendChild(card);
+  });
+
+  galleryGrid.querySelectorAll('.load-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.dataset.id);
+      const item = state.gallery.find(g => g.id === id);
+      if (item) loadArtwork(item);
+    });
   });
 
   galleryGrid.querySelectorAll('.dl-btn').forEach(btn => {
@@ -1455,6 +1518,84 @@ async function downloadItem(item, type) {
     console.error(e);
   }
   hideLoading();
+}
+
+async function loadArtwork(item) {
+  showLoading('Loading artwork…');
+  
+  // Clear current canvas and items
+  dCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+  state.textItems.forEach(t => t.el.remove());
+  state.textItems = [];
+  state.shapeItems.forEach(s => { if(s.el) s.el.remove(); });
+  state.shapeItems = [];
+  
+  // Load drawing canvas
+  if (item.drawingData) {
+    const img = new Image();
+    img.onload = () => {
+      dCtx.drawImage(img, 0, 0);
+    };
+    img.src = item.drawingData;
+  }
+  
+  // Load text items
+  if (item.textItemsData && item.textItemsData.length > 0) {
+    item.textItemsData.forEach(data => {
+      const el = document.createElement('div');
+      el.className = 'text-item';
+      el.textContent = data.text;
+      el.style.left = data.x + 'px';
+      el.style.top = data.y + 'px';
+      el.style.color = data.color;
+      textLayer.appendChild(el);
+      
+      state.textItems.push({
+        id: data.id,
+        text: data.text,
+        x: data.x,
+        y: data.y,
+        color: data.color,
+        el: el
+      });
+    });
+  }
+  
+  // Load shape items
+  if (item.shapeItemsData && item.shapeItemsData.length > 0) {
+    item.shapeItemsData.forEach(data => {
+      const el = document.createElement('div');
+      el.className = 'shape-item';
+      el.style.position = 'absolute';
+      el.style.left = data.x + 'px';
+      el.style.top = data.y + 'px';
+      el.style.width = data.width + 'px';
+      el.style.height = data.height + 'px';
+      el.style.border = `3px solid ${data.color}`;
+      el.style.pointerEvents = 'all';
+      el.style.cursor = 'grab';
+      el.dataset.id = data.id;
+      textLayer.appendChild(el);
+      
+      const item = {
+        id: data.id,
+        type: data.type,
+        x: data.x,
+        y: data.y,
+        width: data.width,
+        height: data.height,
+        color: data.color,
+        el: el,
+        isPlaced: data.isPlaced
+      };
+      state.shapeItems.push(item);
+      drawShapeOnElement(el, item);
+    });
+  }
+  
+  hideLoading();
+  showScreen('main');
+  showToast('Artwork loaded! Text is editable ✓');
 }
 
 async function exportPPTX(item) {
