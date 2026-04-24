@@ -156,6 +156,13 @@ body {
 .text-item.editing { outline: 2px solid var(--pink); outline-offset:4px; background: rgba(10,10,15,.8); padding: 4px 8px; border-radius: 8px; }
 .text-item.editing:focus { outline: 2px solid var(--pink); }
 
+/* ─── SHAPE ITEMS ─── */
+.shape-item {
+  position:absolute; pointer-events:all; user-select:none;
+  transition: outline .1s;
+}
+.shape-item.selected { outline: 2px dashed var(--yellow); outline-offset:4px; }
+
 /* ─── TEXT CONTROLS ─── */
 #textControls {
   position:absolute; top:80px; right:16px;
@@ -164,6 +171,17 @@ body {
   z-index:200; display:none; flex-direction:column; gap:10px; min-width:200px;
 }
 #textControls.visible { display:flex; }
+
+/* ─── SHAPE CONTROLS ─── */
+#shapeControls {
+  position:absolute; top:80px; right:16px;
+  background:rgba(10,10,15,.9); backdrop-filter:blur(16px);
+  border:1px solid var(--border); border-radius:16px; padding:16px;
+  z-index:200; display:none; flex-direction:column; gap:10px; min-width:200px;
+}
+#shapeControls.visible { display:flex; }
+.shape-btn.active { background:var(--pink); border-color:var(--pink); color:#fff; }
+.shape-btn:hover:not(.active) { border-color:rgba(255,255,255,.3); }
 
 /* ─── DONE EDITING BUTTON ─── */
 #doneEditingBtn {
@@ -359,6 +377,18 @@ body {
     <button class="add-text-btn" id="addTextBtn">+ Add Text</button>
   </div>
 
+  <!-- Shape Controls -->
+  <div id="shapeControls">
+    <div style="font-size:.65rem;color:var(--muted);letter-spacing:2px">SHAPE MODE</div>
+    <div id="shapeRow" style="display:flex;gap:8px;margin-top:8px">
+      <button class="shape-btn active" data-shape="line" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.1);color:var(--text);font-size:.7rem;cursor:pointer">/ Line</button>
+      <button class="shape-btn" data-shape="square" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.1);color:var(--text);font-size:.7rem;cursor:pointer">□ Square</button>
+      <button class="shape-btn" data-shape="rectangle" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.1);color:var(--text);font-size:.7rem;cursor:pointer">▭ Rect</button>
+      <button class="shape-btn" data-shape="triangle" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.1);color:var(--text);font-size:.7rem;cursor:pointer">△ Tri</button>
+    </div>
+    <div style="margin-top:10px;font-size:.6rem;color:var(--muted);text-align:center">☝ Index to start, drag to size<br>✌ Peace sign to place</div>
+  </div>
+
   <!-- Done Editing Button -->
   <button id="doneEditingBtn">✓ Done Editing</button>
 
@@ -381,6 +411,7 @@ body {
     <!-- Modes -->
     <button class="tool-btn active" id="drawModeBtn">✏ DRAW</button>
     <button class="tool-btn" id="textModeBtn">T TEXT</button>
+    <button class="tool-btn" id="shapeModeBtn">◇ SHAPE</button>
     <button class="tool-btn" id="eraserBtn" style="color:var(--yellow)">◎ ERASE</button>
   </div>
 </div>
@@ -414,13 +445,13 @@ body {
 // STATE
 // ═══════════════════════════════════════════════════════
 const state = {
-  mode: 'draw',         // 'draw' | 'text' | 'eraser'
+  mode: 'draw',         // 'draw' | 'text' | 'shape' | 'eraser'
   color: '#111111',
   brushSize: 8,
   eraseRadius: 40,
   isDrawing: false,
   lastX: null, lastY: null,
-  gesture: 'none',      // 'draw' | 'erase' | 'none'
+  gesture: 'none',      // 'draw' | 'erase' | 'peace' | 'none'
   gestureHistory: [],
   prevGesture: 'none',
   handsDetected: 0,
@@ -432,6 +463,13 @@ const state = {
   textDragId: null,
   textDragOffX: 0, textDragOffY: 0,
   editingText: null,    // Currently editing text item
+  shapeItems: [],       // {id, type, x, y, width, height, color, el, isPlaced}[]
+  selectedShape: null,
+  currentShape: 'line', // 'line' | 'square' | 'rectangle' | 'triangle'
+  shapeDragActive: false,
+  shapeDragId: null,
+  shapeDragOffX: 0, shapeDragOffY: 0,
+  shapeStartX: null, shapeStartY: null,
 };
 
 // DOM refs
@@ -464,6 +502,7 @@ const textInput     = document.getElementById('textInput');
 const textLayer     = document.getElementById('textLayer');
 const brushInfo     = document.getElementById('brushInfo');
 const doneEditingBtn = document.getElementById('doneEditingBtn');
+const shapeControls = document.getElementById('shapeControls');
 
 const colorMap = { black:'#111111', pink:'#ff2d78', yellow:'#ffe94a', blue:'#2d8bff', green:'#2dff9a' };
 
@@ -541,6 +580,8 @@ function detectGesture(landmarks) {
 
   // High five = all 4 fingers + thumb extended
   if (indexExt && middleExt && ringExt && pinkyExt) return 'erase';
+  // Peace sign = index and middle extended, ring and pinky closed
+  if (indexExt && middleExt && !ringExt && !pinkyExt) return 'peace';
   // Draw = only index extended
   if (indexExt && !middleExt && !ringExt && !pinkyExt) return 'draw';
   return 'none';
@@ -569,6 +610,22 @@ function eraseAt(x, y) {
   dCtx.fillStyle = 'rgba(0,0,0,1)';
   dCtx.fill();
   dCtx.restore();
+
+  // Also check if we're erasing over any placed shapes and remove them
+  state.shapeItems = state.shapeItems.filter(item => {
+    if (!item.isPlaced || !item.el) return true;
+    
+    const cx = item.x + item.width / 2;
+    const cy = item.y + item.height / 2;
+    const d = Math.hypot(x - cx, y - cy);
+    
+    // If eraser overlaps with shape, remove it
+    if (d < Math.max(item.width, item.height) / 2 + r) {
+      item.el.remove();
+      return false;
+    }
+    return true;
+  });
 }
 
 function draw(x, y, gesture) {
@@ -751,7 +808,7 @@ function onHandResults(results) {
   }
 
   // Gesture label
-  const gLabels = { draw:'☝ DRAWING', erase:'✋ ERASING', none:'✊ IDLE' };
+  const gLabels = { draw:'☝ DRAWING', erase:'✋ ERASING', peace:'✌ PEACE', none:'✊ IDLE' };
   gestureLabel.textContent = state.mode === 'eraser' ? '◎ ERASER ON' : (gLabels[gesture] || '—');
 
   // Draw hand skeleton
@@ -760,6 +817,9 @@ function onHandResults(results) {
   // Route to mode
   if (state.mode === 'text') {
     handleTextDrag(activeX, activeY, gesture);
+    state.isDrawing = false;
+  } else if (state.mode === 'shape') {
+    handleShapeDrag(activeX, activeY, gesture);
     state.isDrawing = false;
   } else {
     draw(activeX, activeY, gesture);
@@ -847,6 +907,7 @@ document.getElementById('sizeDown').addEventListener('click', () => {
 
 document.getElementById('drawModeBtn').addEventListener('click', () => setMode('draw'));
 document.getElementById('textModeBtn').addEventListener('click', () => setMode('text'));
+document.getElementById('shapeModeBtn').addEventListener('click', () => setMode('shape'));
 document.getElementById('eraserBtn').addEventListener('click', () => setMode('eraser'));
 
 function setMode(m) {
@@ -855,12 +916,24 @@ function setMode(m) {
   modeLabel.style.color = m === 'eraser' ? 'var(--yellow)' : 'var(--yellow)';
   document.getElementById('drawModeBtn').classList.toggle('active', m==='draw');
   document.getElementById('textModeBtn').classList.toggle('active', m==='text');
+  document.getElementById('shapeModeBtn').classList.toggle('active', m==='shape');
   document.getElementById('eraserBtn').classList.toggle('active', m==='eraser');
   textControls.classList.toggle('visible', m==='text');
+  shapeControls.classList.toggle('visible', m==='shape');
   // Hide eraser ring when leaving eraser mode
   if (m !== 'eraser') {
     eraserRing.style.display = 'none';
     eraseFlash.style.display = 'none';
+  }
+  // Cancel shape creation if leaving shape mode
+  if (m !== 'shape' && state.shapeStartX !== null) {
+    const item = state.shapeItems[state.shapeItems.length - 1];
+    if (item && item.el && !item.isPlaced) {
+      item.el.remove();
+      state.shapeItems.pop();
+    }
+    state.shapeStartX = null;
+    state.shapeStartY = null;
   }
   // Update brush info label
   const sizeLabel = document.getElementById('sizeLabel');
@@ -868,6 +941,7 @@ function setMode(m) {
   sizeDisplay.textContent = m === 'eraser' ? state.eraseRadius : state.brushSize;
   if (m === 'eraser') showToast('◎ Eraser mode — ✋ high-five OR move hand to erase');
   else if (m === 'text') showToast('T Text mode — ✋ high-five to drag text');
+  else if (m === 'shape') showToast('◇ Shape mode — ☝ Index to start, ✌ Peace to place');
   else showToast('✏ Draw mode — ☝ index finger to draw');
 }
 
@@ -878,6 +952,15 @@ let textIdCounter = 0;
 
 document.getElementById('addTextBtn').addEventListener('click', addText);
 textInput.addEventListener('keydown', e => { if(e.key==='Enter') addText(); });
+
+// Shape selection buttons
+document.querySelectorAll('.shape-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.currentShape = btn.dataset.shape;
+  });
+});
 
 function addText() {
   const txt = textInput.value.trim();
@@ -997,6 +1080,196 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ═══════════════════════════════════════════════════════
+// SHAPE ITEMS
+// ═══════════════════════════════════════════════════════
+let shapeIdCounter = 0;
+
+function handleShapeDrag(x, y, gesture) {
+  // If peace sign detected and we have an active shape being created, place it permanently
+  if (gesture === 'peace' && state.shapeStartX !== null) {
+    placeShape();
+    state.shapeStartX = null;
+    state.shapeStartY = null;
+    return;
+  }
+
+  if (gesture === 'draw') {
+    // Index finger = start or resize shape
+    if (state.shapeStartX === null) {
+      // Start new shape
+      state.shapeStartX = x;
+      state.shapeStartY = y;
+      createTempShape(x, y);
+    } else {
+      // Resize current shape
+      updateTempShape(x, y);
+    }
+  } else if (gesture === 'erase') {
+    // High five = drag existing placed shapes
+    if (!state.shapeDragActive) {
+      let closest = null, minDist = 80;
+      state.shapeItems.filter(s => s.isPlaced && s.el).forEach(item => {
+        const cx = item.x + item.width / 2;
+        const cy = item.y + item.height / 2;
+        const d = Math.hypot(x - cx, y - cy);
+        if (d < minDist) { minDist = d; closest = item; }
+      });
+      if (closest) {
+        state.shapeDragActive = true;
+        state.shapeDragId = closest.id;
+        state.shapeDragOffX = x - closest.x;
+        state.shapeDragOffY = y - closest.y;
+        closest.el.classList.add('selected');
+        showHint('✋ Dragging shape — open hand to move');
+      }
+    } else {
+      // Move the shape
+      const item = state.shapeItems.find(s => s.id === state.shapeDragId);
+      if (item && item.el) {
+        // Clear previous shape from canvas
+        clearShapeFromCanvas(item);
+        
+        const nx = x - state.shapeDragOffX;
+        const ny = y - state.shapeDragOffY;
+        item.x = nx; item.y = ny;
+        item.el.style.left = nx + 'px';
+        item.el.style.top = ny + 'px';
+        
+        // Redraw at new position
+        drawShapeOnCanvas(item);
+      }
+    }
+  } else {
+    // Release drag
+    if (state.shapeDragActive) {
+      const item = state.shapeItems.find(s => s.id === state.shapeDragId);
+      if (item && item.el) item.el.classList.remove('selected');
+    }
+    state.shapeDragActive = false;
+    state.shapeDragId = null;
+  }
+}
+
+function createTempShape(x, y) {
+  const id = ++shapeIdCounter;
+  const el = document.createElement('div');
+  el.className = 'shape-item';
+  el.style.position = 'absolute';
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  el.style.width = '0px';
+  el.style.height = '0px';
+  el.style.border = `3px solid ${state.color}`;
+  el.style.pointerEvents = 'all';
+  el.style.cursor = 'grab';
+  el.dataset.id = id;
+  textLayer.appendChild(el);
+
+  const item = { id, type: state.currentShape, x, y, width: 0, height: 0, color: state.color, el, isPlaced: false };
+  state.shapeItems.push(item);
+  drawShapeOnElement(el, item);
+}
+
+function updateTempShape(x, y) {
+  const item = state.shapeItems[state.shapeItems.length - 1];
+  if (!item || item.isPlaced) return;
+
+  const width = Math.abs(x - state.shapeStartX);
+  const height = Math.abs(y - state.shapeStartY);
+  const newX = Math.min(x, state.shapeStartX);
+  const newY = Math.min(y, state.shapeStartY);
+
+  item.width = width;
+  item.height = height;
+  item.x = newX;
+  item.y = newY;
+
+  item.el.style.left = newX + 'px';
+  item.el.style.top = newY + 'px';
+  item.el.style.width = width + 'px';
+  item.el.style.height = height + 'px';
+
+  drawShapeOnElement(item.el, item);
+}
+
+function placeShape() {
+  const item = state.shapeItems[state.shapeItems.length - 1];
+  if (!item || item.isPlaced) return;
+
+  item.isPlaced = true;
+  item.el.classList.add('placed');
+  
+  // Draw the shape permanently on the canvas
+  drawShapeOnCanvas(item);
+  
+  // Keep the DOM element for dragging
+  showToast('Shape placed! Use eraser to remove');
+}
+
+function drawShapeOnElement(el, item) {
+  el.innerHTML = '';
+  el.style.background = 'transparent';
+  
+  if (item.type === 'line') {
+    // For line, we use SVG
+    el.innerHTML = `<svg width="100%" height="100%" style="position:absolute;top:0;left:0;overflow:visible">
+      <line x1="0" y1="0" x2="${item.width}" y2="${item.height}" stroke="${item.color}" stroke-width="3" stroke-linecap="round"/>
+    </svg>`;
+    el.style.border = 'none';
+  } else if (item.type === 'square') {
+    const size = Math.max(item.width, item.height);
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+  } else if (item.type === 'triangle') {
+    el.innerHTML = `<svg width="100%" height="100%" style="position:absolute;top:0;left:0">
+      <polygon points="${item.width/2},0 ${item.width},${item.height} 0,${item.height}" fill="none" stroke="${item.color}" stroke-width="3"/>
+    </svg>`;
+    el.style.border = 'none';
+  }
+  // Rectangle uses default border styling
+}
+
+function drawShapeOnCanvas(item) {
+  dCtx.globalCompositeOperation = 'source-over';
+  dCtx.strokeStyle = item.color;
+  dCtx.lineWidth = state.brushSize;
+  dCtx.lineCap = 'round';
+  dCtx.lineJoin = 'round';
+
+  if (item.type === 'line') {
+    dCtx.beginPath();
+    dCtx.moveTo(state.shapeStartX, state.shapeStartY);
+    dCtx.lineTo(item.x + item.width, item.y + item.height);
+    dCtx.stroke();
+  } else if (item.type === 'square') {
+    const size = Math.max(item.width, item.height);
+    dCtx.strokeRect(item.x, item.y, size, size);
+  } else if (item.type === 'rectangle') {
+    dCtx.strokeRect(item.x, item.y, item.width, item.height);
+  } else if (item.type === 'triangle') {
+    dCtx.beginPath();
+    dCtx.moveTo(item.x + item.width / 2, item.y);
+    dCtx.lineTo(item.x + item.width, item.y + item.height);
+    dCtx.lineTo(item.x, item.y + item.height);
+    dCtx.closePath();
+    dCtx.stroke();
+  }
+}
+
+function clearShapeFromCanvas(item) {
+  const padding = state.brushSize + 4;
+  const clearX = item.x - padding;
+  const clearY = item.y - padding;
+  const clearW = item.width + padding * 2;
+  const clearH = item.height + padding * 2;
+  
+  dCtx.save();
+  dCtx.globalCompositeOperation = 'destination-out';
+  dCtx.fillRect(clearX, clearY, clearW, clearH);
+  dCtx.restore();
+}
+
+// ═══════════════════════════════════════════════════════
 // SAVE / GALLERY
 // ═══════════════════════════════════════════════════════
 document.getElementById('saveBtn').addEventListener('click', saveArtwork);
@@ -1008,6 +1281,8 @@ function clearCanvas() {
   dCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
   state.textItems.forEach(item => item.el.remove());
   state.textItems = [];
+  state.shapeItems.forEach(item => { if(item.el) item.el.remove(); });
+  state.shapeItems = [];
   showToast('Canvas cleared');
 }
 
