@@ -381,8 +381,7 @@ body {
   <div id="shapeControls">
     <div style="font-size:.65rem;color:var(--muted);letter-spacing:2px">SHAPE MODE</div>
     <div id="shapeRow" style="display:flex;gap:8px;margin-top:8px">
-      <button class="shape-btn active" data-shape="line" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.1);color:var(--text);font-size:.7rem;cursor:pointer">/ Line</button>
-      <button class="shape-btn" data-shape="square" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.1);color:var(--text);font-size:.7rem;cursor:pointer">□ Square</button>
+      <button class="shape-btn active" data-shape="square" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.1);color:var(--text);font-size:.7rem;cursor:pointer">□ Square</button>
       <button class="shape-btn" data-shape="rectangle" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.1);color:var(--text);font-size:.7rem;cursor:pointer">▭ Rect</button>
       <button class="shape-btn" data-shape="triangle" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.1);color:var(--text);font-size:.7rem;cursor:pointer">△ Tri</button>
     </div>
@@ -465,7 +464,7 @@ const state = {
   editingText: null,    // Currently editing text item
   shapeItems: [],       // {id, type, x, y, width, height, color, el, isPlaced}[]
   selectedShape: null,
-  currentShape: 'line', // 'line' | 'square' | 'rectangle' | 'triangle'
+  currentShape: 'square', // 'square' | 'rectangle' | 'triangle'
   shapeDragActive: false,
   shapeDragId: null,
   shapeDragOffX: 0, shapeDragOffY: 0,
@@ -1129,11 +1128,24 @@ function handleShapeDrag(x, y, gesture) {
         // Clear previous shape from canvas
         clearShapeFromCanvas(item);
         
+        const dx = x - state.shapeDragOffX - item.x;
+        const dy = y - state.shapeDragOffY - item.y;
+        
         const nx = x - state.shapeDragOffX;
         const ny = y - state.shapeDragOffY;
         item.x = nx; item.y = ny;
         item.el.style.left = nx + 'px';
         item.el.style.top = ny + 'px';
+        
+        // Update start/end coordinates for lines
+        if (item.type === 'line' && item.startX !== undefined) {
+          item.startX += dx;
+          item.startY += dy;
+          item.endX += dx;
+          item.endY += dy;
+          // Redraw the element with updated coordinates
+          drawShapeOnElement(item.el, item);
+        }
         
         // Redraw at new position
         drawShapeOnCanvas(item);
@@ -1174,20 +1186,48 @@ function updateTempShape(x, y) {
   const item = state.shapeItems[state.shapeItems.length - 1];
   if (!item || item.isPlaced) return;
 
-  const width = Math.abs(x - state.shapeStartX);
-  const height = Math.abs(y - state.shapeStartY);
-  const newX = Math.min(x, state.shapeStartX);
-  const newY = Math.min(y, state.shapeStartY);
+  if (item.type === 'line') {
+    // For line, keep start position fixed, extend to cursor
+    const width = x - state.shapeStartX;
+    const height = y - state.shapeStartY;
+    
+    item.width = Math.abs(width);
+    item.height = Math.abs(height);
+    // Keep original start position
+    item.x = state.shapeStartX;
+    item.y = state.shapeStartY;
+    
+    // For negative direction, we need to adjust the element position
+    const actualX = width < 0 ? x : state.shapeStartX;
+    const actualY = height < 0 ? y : state.shapeStartY;
+    
+    item.el.style.left = actualX + 'px';
+    item.el.style.top = actualY + 'px';
+    item.el.style.width = item.width + 'px';
+    item.el.style.height = item.height + 'px';
+    
+    // Store the actual start point for drawing
+    item.startX = state.shapeStartX;
+    item.startY = state.shapeStartY;
+    item.endX = x;
+    item.endY = y;
+  } else {
+    // For other shapes, use bounding box
+    const width = Math.abs(x - state.shapeStartX);
+    const height = Math.abs(y - state.shapeStartY);
+    const newX = Math.min(x, state.shapeStartX);
+    const newY = Math.min(y, state.shapeStartY);
 
-  item.width = width;
-  item.height = height;
-  item.x = newX;
-  item.y = newY;
+    item.width = width;
+    item.height = height;
+    item.x = newX;
+    item.y = newY;
 
-  item.el.style.left = newX + 'px';
-  item.el.style.top = newY + 'px';
-  item.el.style.width = width + 'px';
-  item.el.style.height = height + 'px';
+    item.el.style.left = newX + 'px';
+    item.el.style.top = newY + 'px';
+    item.el.style.width = width + 'px';
+    item.el.style.height = height + 'px';
+  }
 
   drawShapeOnElement(item.el, item);
 }
@@ -1211,9 +1251,20 @@ function drawShapeOnElement(el, item) {
   el.style.background = 'transparent';
   
   if (item.type === 'line') {
-    // For line, we use SVG
+    // For line, use the actual start and end coordinates
+    const x1 = item.startX !== undefined ? (item.startX - item.x) : 0;
+    const y1 = item.startY !== undefined ? (item.startY - item.y) : 0;
+    const x2 = item.endX !== undefined ? (item.endX - item.x) : item.width;
+    const y2 = item.endY !== undefined ? (item.endY - item.y) : item.height;
+    
+    // Calculate the bounding box for the SVG
+    const svgX = Math.min(x1, x2);
+    const svgY = Math.min(y1, y2);
+    const svgWidth = Math.abs(x2 - x1) || 1;
+    const svgHeight = Math.abs(y2 - y1) || 1;
+    
     el.innerHTML = `<svg width="100%" height="100%" style="position:absolute;top:0;left:0;overflow:visible">
-      <line x1="0" y1="0" x2="${item.width}" y2="${item.height}" stroke="${item.color}" stroke-width="3" stroke-linecap="round"/>
+      <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${item.color}" stroke-width="3" stroke-linecap="round"/>
     </svg>`;
     el.style.border = 'none';
   } else if (item.type === 'square') {
@@ -1238,8 +1289,8 @@ function drawShapeOnCanvas(item) {
 
   if (item.type === 'line') {
     dCtx.beginPath();
-    dCtx.moveTo(state.shapeStartX, state.shapeStartY);
-    dCtx.lineTo(item.x + item.width, item.y + item.height);
+    dCtx.moveTo(item.startX || state.shapeStartX, item.startY || state.shapeStartY);
+    dCtx.lineTo(item.endX || (item.x + item.width), item.endY || (item.y + item.height));
     dCtx.stroke();
   } else if (item.type === 'square') {
     const size = Math.max(item.width, item.height);
@@ -1258,15 +1309,35 @@ function drawShapeOnCanvas(item) {
 
 function clearShapeFromCanvas(item) {
   const padding = state.brushSize + 4;
-  const clearX = item.x - padding;
-  const clearY = item.y - padding;
-  const clearW = item.width + padding * 2;
-  const clearH = item.height + padding * 2;
   
-  dCtx.save();
-  dCtx.globalCompositeOperation = 'destination-out';
-  dCtx.fillRect(clearX, clearY, clearW, clearH);
-  dCtx.restore();
+  if (item.type === 'line') {
+    // For lines, clear a bounding box around the entire line
+    const minX = Math.min(item.startX || item.x, item.endX || (item.x + item.width));
+    const minY = Math.min(item.startY || item.y, item.endY || (item.y + item.height));
+    const maxX = Math.max(item.startX || item.x, item.endX || (item.x + item.width));
+    const maxY = Math.max(item.startY || item.y, item.endY || (item.y + item.height));
+    
+    const clearX = minX - padding;
+    const clearY = minY - padding;
+    const clearW = (maxX - minX) + padding * 2;
+    const clearH = (maxY - minY) + padding * 2;
+    
+    dCtx.save();
+    dCtx.globalCompositeOperation = 'destination-out';
+    dCtx.fillRect(clearX, clearY, clearW, clearH);
+    dCtx.restore();
+  } else {
+    // For other shapes, use the bounding box
+    const clearX = item.x - padding;
+    const clearY = item.y - padding;
+    const clearW = item.width + padding * 2;
+    const clearH = item.height + padding * 2;
+    
+    dCtx.save();
+    dCtx.globalCompositeOperation = 'destination-out';
+    dCtx.fillRect(clearX, clearY, clearW, clearH);
+    dCtx.restore();
+  }
 }
 
 // ═══════════════════════════════════════════════════════
