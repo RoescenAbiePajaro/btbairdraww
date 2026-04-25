@@ -156,7 +156,7 @@ function renderGallery() {
       <div class="gallery-actions">
         <button class="load-btn" data-id="${item.id}">📂 Load</button>
         <button class="dl-btn" data-id="${item.id}" data-type="png">⬇ PNG</button>
-        <button class="dl-btn pdf" data-id="${item.id}" data-type="pdf">⬇ PDF</button>
+        <button class="dl-btn pdf" data-id="${item.id}" data-type="pdf">⬇ PDF+Text</button>
         <button class="dl-btn pptx" data-id="${item.id}" data-type="pptx">⬇ PPTX</button>
       </div>
     `;
@@ -229,15 +229,7 @@ async function downloadItem(item, type) {
       a.click();
 
     } else if (type === 'pdf') {
-      const { jsPDF } = window.jspdf;
-      const img = new Image();
-      img.src = item.dataURL;
-      await new Promise(r => img.onload = r);
-      const pw = img.naturalWidth || 1280;
-      const ph = img.naturalHeight || 720;
-      const pdf = new jsPDF({ orientation:'landscape', unit:'px', format:[pw,ph] });
-      pdf.addImage(item.dataURL, 'PNG', 0, 0, pw, ph);
-      pdf.save(`airdraw-${item.id}.pdf`);
+      await createTypablePDF(item);
 
     } else if (type === 'pptx') {
       await exportPPTX(item);
@@ -471,16 +463,118 @@ async function exportAsZip(items) {
   setTimeout(() => URL.revokeObjectURL(url), 3000);
 }
 
-async function exportAsPDFWithOCR(items) {
-  // Check if required libraries are available
+async function createTypablePDF(item) {
   if (!window.jspdf) {
     showToast('jsPDF library not loaded');
     throw new Error('jsPDF library not available');
   }
   
-  if (!window.Tesseract) {
-    showToast('Tesseract.js library not loaded');
-    throw new Error('Tesseract.js library not available');
+  const { jsPDF } = window.jspdf;
+  
+  // Create PDF
+  const pdf = new jsPDF({ orientation:'portrait', unit:'px', format:'a4' });
+  const a4Width = 595.28;
+  const a4Height = 841.89;
+  const margin = 50;
+  const contentWidth = a4Width - (margin * 2);
+  
+  // Extract text from stored text data
+  let extractedText = '';
+  let hasTextContent = false;
+  
+  if (item.textItemsData && item.textItemsData.length > 0) {
+    hasTextContent = true;
+    // Sort text items by Y position, then by X position for natural reading order
+    const sortedTexts = [...item.textItemsData].sort((a, b) => {
+      if (Math.abs(a.y - b.y) < 30) { // Same line (within 30px)
+        return a.x - b.x; // Sort by X position
+      }
+      return a.y - b.y; // Sort by Y position
+    });
+    
+    extractedText = sortedTexts.map(textItem => textItem.text).join(' ');
+  }
+  
+  // Add header
+  pdf.setFontSize(20);
+  pdf.setFont('helvetica', 'bold');
+  const headerText = 'Beyond The Brush - AirDraw';
+  const headerWidth = pdf.getTextWidth(headerText);
+  pdf.text(headerText, (a4Width - headerWidth) / 2, 40);
+  
+  // Add line below header
+  pdf.setDrawColor(180, 180, 180);
+  pdf.setLineWidth(1);
+  pdf.line(margin, 55, a4Width - margin, 55);
+  
+  let currentY = 80;
+  
+  // Add extracted text if available
+  if (hasTextContent && extractedText.trim().length > 0) {
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Extracted Text:', margin, currentY);
+    currentY += 25;
+    
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(0, 0, 0);
+    
+    // Word wrap the text
+    const lines = pdf.splitTextToSize(extractedText, contentWidth);
+    
+    lines.forEach((line, index) => {
+      if (currentY + (index * 18) < a4Height - 150) { // Leave space for image
+        pdf.text(line, margin, currentY + (index * 18));
+      }
+    });
+    
+    currentY += lines.length * 18 + 20;
+  }
+  
+  // Add the image below text
+  if (currentY < a4Height - 150) { // Ensure we have space for image
+    // Load image to get dimensions
+    const img = new Image();
+    img.src = item.dataURL;
+    await new Promise(resolve => {
+      if (img.complete) resolve();
+      else img.onload = resolve;
+    });
+    
+    // Calculate image dimensions to fit within page
+    const imgWidth = contentWidth;
+    const imgHeight = (imgWidth / (img.naturalWidth || 1280)) * (img.naturalHeight || 720);
+    const maxHeight = a4Height - currentY - 30;
+    
+    let finalWidth = imgWidth;
+    let finalHeight = imgHeight;
+    
+    if (imgHeight > maxHeight) {
+      finalHeight = maxHeight;
+      finalWidth = (maxHeight / imgHeight) * imgWidth;
+    }
+    
+    // Center the image
+    const imgX = (a4Width - finalWidth) / 2;
+    
+    // Add image
+    pdf.addImage(item.dataURL, 'PNG', imgX, currentY, finalWidth, finalHeight);
+    
+    // Add border around image
+    pdf.setDrawColor(200, 200, 200);
+    pdf.setLineWidth(0.5);
+    pdf.rect(imgX, currentY, finalWidth, finalHeight);
+  }
+  
+  pdf.save(`airdraw-${item.id}.pdf`);
+}
+
+async function exportAsPDFWithOCR(items) {
+  // Check if required libraries are available
+  if (!window.jspdf) {
+    showToast('jsPDF library not loaded');
+    throw new Error('jsPDF library not available');
   }
   
   const { jsPDF } = window.jspdf;
@@ -489,86 +583,110 @@ async function exportAsPDFWithOCR(items) {
   const pdf = new jsPDF({ orientation:'portrait', unit:'px', format:'a4' });
   const a4Width = 595.28;
   const a4Height = 841.89;
+  const margin = 50;
+  const contentWidth = a4Width - (margin * 2);
   
   for (const item of items) {
-    showLoading(`Processing OCR for item ${items.indexOf(item) + 1}/${items.length}…`);
+    showLoading(`Processing item ${items.indexOf(item) + 1}/${items.length}…`);
     
     try {
-      // Create canvas for OCR
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.src = item.dataURL;
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = () => reject(new Error('Failed to load image'));
-      });
+      // Extract text from stored text data instead of OCR
+      let extractedText = '';
+      let hasTextContent = false;
       
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth || 1280;
-      canvas.height = img.naturalHeight || 720;
-      const ctx = canvas.getContext('2d');
-      
-      // Draw the image (text is already composited in the saved image)
-      ctx.drawImage(img, 0, 0);
-      
-      // Perform OCR using Tesseract.js
-      let ocrText = '';
-      try {
-        const result = await Tesseract.recognize(canvas, 'eng', {
-          logger: m => {}
+      if (item.textItemsData && item.textItemsData.length > 0) {
+        hasTextContent = true;
+        // Sort text items by Y position, then by X position for natural reading order
+        const sortedTexts = [...item.textItemsData].sort((a, b) => {
+          if (Math.abs(a.y - b.y) < 30) { // Same line (within 30px)
+            return a.x - b.x; // Sort by X position
+          }
+          return a.y - b.y; // Sort by Y position
         });
-        ocrText = result.data.text.trim();
-        console.log('OCR Result:', ocrText);
-      } catch (e) {
-        console.warn('OCR failed:', e);
-        ocrText = '';
+        
+        extractedText = sortedTexts.map(textItem => textItem.text).join(' ');
       }
       
-      // Add text page if text exists (separate A4 page)
-      if (ocrText && ocrText.length > 0) {
-        pdf.setPage(pdf.internal.getNumberOfPages());
-        
-        // Add header
-        pdf.setFontSize(24);
+      // Create a combined page with both text and image
+      pdf.addPage([a4Width, a4Height]);
+      
+      // Add header
+      pdf.setFontSize(20);
+      pdf.setFont('helvetica', 'bold');
+      const headerText = 'Beyond The Brush - AirDraw';
+      const headerWidth = pdf.getTextWidth(headerText);
+      pdf.text(headerText, (a4Width - headerWidth) / 2, 40);
+      
+      // Add line below header
+      pdf.setDrawColor(180, 180, 180);
+      pdf.setLineWidth(1);
+      pdf.line(margin, 55, a4Width - margin, 55);
+      
+      let currentY = 80;
+      
+      // Add extracted text if available
+      if (hasTextContent && extractedText.trim().length > 0) {
+        pdf.setFontSize(14);
         pdf.setFont('helvetica', 'bold');
-        const headerText = 'Beyond The Brush';
-        const headerWidth = pdf.getTextWidth(headerText);
-        pdf.text(headerText, (a4Width - headerWidth) / 2, 50);
+        pdf.text('Extracted Text:', margin, currentY);
+        currentY += 25;
         
-        // Add line below header
-        pdf.setDrawColor(180, 180, 180);
-        pdf.setLineWidth(1);
-        pdf.line(50, 60, a4Width - 50, 60);
-        
-        // Add detected text
         pdf.setFontSize(12);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(0, 0, 0);
         
-        const textY = 90;
-        const maxWidth = a4Width - 100;
-        const lines = pdf.splitTextToSize(ocrText, maxWidth);
+        // Word wrap the text
+        const lines = pdf.splitTextToSize(extractedText, contentWidth);
         
         lines.forEach((line, index) => {
-          if (textY + (index * 20) < a4Height - 50) {
-            pdf.text(line, 50, textY + (index * 20));
+          if (currentY + (index * 18) < a4Height - 150) { // Leave space for image
+            pdf.text(line, margin, currentY + (index * 18));
           }
         });
         
-        // Add new page for image with custom dimensions
-        pdf.addPage([canvas.width, canvas.height]);
-      } else {
-        // No text, just add image page
-        pdf.addPage([canvas.width, canvas.height]);
+        currentY += lines.length * 18 + 20;
       }
       
-      // Add image at full resolution
-      pdf.addImage(item.dataURL, 'PNG', 0, 0, canvas.width, canvas.height);
+      // Add the image below text
+      if (currentY < a4Height - 150) { // Ensure we have space for image
+        // Load image to get dimensions
+        const img = new Image();
+        img.src = item.dataURL;
+        await new Promise(resolve => {
+          if (img.complete) resolve();
+          else img.onload = resolve;
+        });
+        
+        // Calculate image dimensions to fit within page
+        const imgWidth = contentWidth;
+        const imgHeight = (imgWidth / (img.naturalWidth || 1280)) * (img.naturalHeight || 720);
+        const maxHeight = a4Height - currentY - 30;
+        
+        let finalWidth = imgWidth;
+        let finalHeight = imgHeight;
+        
+        if (imgHeight > maxHeight) {
+          finalHeight = maxHeight;
+          finalWidth = (maxHeight / imgHeight) * imgWidth;
+        }
+        
+        // Center the image
+        const imgX = (a4Width - finalWidth) / 2;
+        
+        // Add image
+        pdf.addImage(item.dataURL, 'PNG', imgX, currentY, finalWidth, finalHeight);
+        
+        // Add border around image
+        pdf.setDrawColor(200, 200, 200);
+        pdf.setLineWidth(0.5);
+        pdf.rect(imgX, currentY, finalWidth, finalHeight);
+      }
       
-      // Add new A4 page for next item (if any)
+      // Add page separator except for last item
       if (items.indexOf(item) < items.length - 1) {
         pdf.addPage([a4Width, a4Height]);
       }
+      
     } catch (e) {
       console.error('Error processing item:', e);
       showToast(`Error processing item: ${e.message}`);
@@ -577,7 +695,7 @@ async function exportAsPDFWithOCR(items) {
   }
   
   try {
-    pdf.save(`airdraw-ocr-export-${Date.now()}.pdf`);
+    pdf.save(`airdraw-typable-export-${Date.now()}.pdf`);
   } catch (e) {
     console.error('Error saving PDF:', e);
     showToast('Error saving PDF');
