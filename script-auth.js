@@ -113,7 +113,7 @@ async function loadUserGallery() {
       state.gallery = galleryData.map(item => ({
         dataURL: item.dataURL,
         timestamp: item.timestamp,
-        id: item.id,
+        id: parseInt(item.id),
         drawingData: item.drawingData,
         textItemsData: item.textItemsData || [],
         shapeItemsData: item.shapeItemsData || []

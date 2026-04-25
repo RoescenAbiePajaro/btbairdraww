@@ -61,17 +61,23 @@ router.post('/', authenticateToken, async (req, res) => {
 // Delete artwork from gallery
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
+    console.log('Delete request - User ID:', req.user.id, 'Artwork ID:', req.params.id);
+    
     const result = await Gallery.findOneAndDelete({ 
       userId: req.user.id, 
       id: parseInt(req.params.id) 
     });
     
+    console.log('Delete result:', result);
+    
     if (!result) {
+      console.log('Artwork not found for user:', req.user.id, 'id:', req.params.id);
       return res.status(404).json({ error: 'Artwork not found' });
     }
     
     res.json({ message: 'Artwork deleted successfully' });
   } catch (error) {
+    console.error('Delete error:', error);
     res.status(500).json({ error: error.message });
   }
 });
