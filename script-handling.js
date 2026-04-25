@@ -694,7 +694,8 @@ function clearShapeFromCanvas(item) {
     const clearH = (maxY - minY) + padding * 2;
     
     dCtx.save();
-    dCtx.globalCompositeOperation = 'destination-out';
+    dCtx.globalCompositeOperation = 'source-over';
+    dCtx.fillStyle = '#ffffff';
     dCtx.fillRect(clearX, clearY, clearW, clearH);
     dCtx.restore();
   } else {
@@ -705,7 +706,8 @@ function clearShapeFromCanvas(item) {
     const clearH = item.height + padding * 2;
     
     dCtx.save();
-    dCtx.globalCompositeOperation = 'destination-out';
+    dCtx.globalCompositeOperation = 'source-over';
+    dCtx.fillStyle = '#ffffff';
     dCtx.fillRect(clearX, clearY, clearW, clearH);
     dCtx.restore();
   }

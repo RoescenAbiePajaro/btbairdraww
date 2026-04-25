@@ -178,14 +178,14 @@ function smoothGesture(g) {
 // DRAWING LOGIC
 // ═══════════════════════════════════════════════════════
 
-// Erase at a given point — always uses destination-out
+// Erase at a given point — paints white
 function eraseAt(x, y) {
   const r = state.eraseRadius;
   dCtx.save();
-  dCtx.globalCompositeOperation = 'destination-out';
+  dCtx.globalCompositeOperation = 'source-over';
   dCtx.beginPath();
   dCtx.arc(x, y, r, 0, Math.PI * 2);
-  dCtx.fillStyle = 'rgba(0,0,0,1)';
+  dCtx.fillStyle = '#ffffff';
   dCtx.fill();
   dCtx.restore();
 
