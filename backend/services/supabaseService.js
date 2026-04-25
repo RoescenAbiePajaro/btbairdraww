@@ -258,12 +258,65 @@ class SupabaseService {
     }
   }
 
+  // Upload base64 image to Supabase Storage
+  async uploadImageToStorage(dataURL, userId) {
+    try {
+      // Extract base64 data
+      const base64Data = dataURL.split(',')[1];
+      const buffer = Buffer.from(base64Data, 'base64');
+      
+      // Generate unique filename
+      const timestamp = Date.now();
+      const randomSuffix = Math.random().toString(36).substring(7);
+      const fileName = `${userId}/${timestamp}_${randomSuffix}.png`;
+      
+      console.log('Uploading image to storage:', fileName);
+      
+      // Ensure bucket exists
+      await this.ensureBucket();
+      
+      // Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from(this.bucketName)
+        .upload(fileName, buffer, {
+          contentType: 'image/png',
+          cacheControl: '3600',
+          upsert: false
+        });
+      
+      if (error) {
+        console.error('Storage upload error:', error);
+        throw error;
+      }
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from(this.bucketName)
+        .getPublicUrl(fileName);
+      
+      console.log('Image uploaded successfully:', publicUrl);
+      
+      return {
+        path: data.path,
+        publicUrl,
+        fileName
+      };
+    } catch (error) {
+      console.error('Error uploading image to storage:', error);
+      throw error;
+    }
+  }
+
   // Gallery database operations using Supabase
   async saveToGallery(userId, dataURL, timestamp, drawingData, textItemsData, shapeItemsData) {
     try {
-      // Skip directly to REST API to bypass PostgREST cache issues
-      console.log('Using direct REST API to bypass PostgREST cache');
-      return await this.saveToGalleryREST(userId, dataURL, timestamp, drawingData, textItemsData, shapeItemsData);
+      // Upload image to Supabase Storage first
+      console.log('Uploading image to storage...');
+      const storageResult = await this.uploadImageToStorage(dataURL, userId);
+      
+      // Save to database with storage URL
+      console.log('Saving to database with storage URL...');
+      return await this.saveToGalleryREST(userId, storageResult.publicUrl, timestamp, drawingData, textItemsData, shapeItemsData);
     } catch (error) {
       console.error('Error saving to gallery:', error);
       throw error;
@@ -338,6 +391,17 @@ class SupabaseService {
 
   async deleteFromGallery(userId, galleryId) {
     try {
+      // First get the gallery item to retrieve the image URL
+      const { data: galleryItem, error: fetchError } = await supabase
+        .from('gallery')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('id', galleryId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Delete from database
       const { data, error } = await supabase
         .from('gallery')
         .delete()
@@ -347,6 +411,27 @@ class SupabaseService {
         .single();
 
       if (error) throw error;
+
+      // Delete image from storage if it's a storage URL
+      if (galleryItem.dataURL && galleryItem.dataURL.startsWith('https://')) {
+        try {
+          // Extract file path from URL
+          const urlParts = galleryItem.dataURL.split('/');
+          const fileName = urlParts[urlParts.length - 1];
+          const filePath = `${userId}/${fileName}`;
+          
+          console.log('Deleting image from storage:', filePath);
+          await supabase.storage
+            .from(this.bucketName)
+            .remove([filePath]);
+          
+          console.log('Image deleted from storage successfully');
+        } catch (storageError) {
+          console.warn('Failed to delete image from storage:', storageError.message);
+          // Don't throw error - database deletion was successful
+        }
+      }
+
       return data;
     } catch (error) {
       console.error('Error deleting from gallery:', error);

@@ -49,9 +49,6 @@ deleteBtn.addEventListener('click', async () => {
       state.gallery = state.gallery.filter(item => !state.selectedGalleryItems.has(item.id));
       state.selectedGalleryItems.clear();
       
-      // Update localStorage
-      localStorage.setItem('airdraw_gallery', JSON.stringify(state.gallery));
-      
       renderGallery();
       hideLoading();
       showToast(`Deleted ${selectedItems.length} artwork${selectedItems.length > 1 ? 's' : ''}`);
@@ -185,23 +182,10 @@ async function saveArtwork() {
       shapeItemsData
     });
     
-    // Update localStorage
-    localStorage.setItem('airdraw_gallery', JSON.stringify(state.gallery));
-    
     renderGallery();
   } catch (error) {
     console.error('Failed to save artwork:', error);
-    // Fallback to local storage if server fails
-    state.gallery.unshift({ 
-      dataURL, 
-      timestamp: ts, 
-      id: Date.now(),
-      drawingData,
-      textItemsData,
-      shapeItemsData
-    });
-    renderGallery();
-    showToast('Saved locally (server unavailable) 🎨');
+    showToast('Failed to save artwork: ' + error.message);
   }
 }
 
@@ -219,6 +203,7 @@ function renderGallery() {
     if (state.selectedGalleryItems.has(item.id)) {
       card.classList.add('selected');
     }
+    // item.dataURL now contains Supabase Storage public URL
     card.innerHTML = `
       <input type="checkbox" class="card-checkbox" data-id="${item.id}" ${state.selectedGalleryItems.has(item.id) ? 'checked' : ''}>
       <img class="gallery-thumb" src="${item.dataURL}" alt="Artwork" data-id="${item.id}">
@@ -295,10 +280,23 @@ async function downloadItem(item, type) {
   showLoading(`Exporting as ${type.toUpperCase()}…`);
   try {
     if (type === 'png') {
-      const a = document.createElement('a');
-      a.href = item.dataURL;
-      a.download = `airdraw-${item.id}.png`;
-      a.click();
+      // If dataURL is a Supabase Storage URL, fetch the image first
+      if (item.dataURL.startsWith('http')) {
+        const response = await fetch(item.dataURL);
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `airdraw-${item.id}.png`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } else {
+        // Fallback for base64
+        const a = document.createElement('a');
+        a.href = item.dataURL;
+        a.download = `airdraw-${item.id}.png`;
+        a.click();
+      }
 
     } else if (type === 'pdf') {
       await createTypablePDF(item);
@@ -408,10 +406,22 @@ async function exportPPTX(item) {
   // Build a minimal PPTX using JSZip + OOXML
   const JSZip = window.JSZip;
   const zip = new JSZip();
-  const imgData = item.dataURL.split(',')[1];
+  let imgData;
+  
+  // If dataURL is a Supabase Storage URL, fetch the image
+  if (item.dataURL.startsWith('http')) {
+    const response = await fetch(item.dataURL);
+    const blob = await response.blob();
+    const arrayBuffer = await blob.arrayBuffer();
+    imgData = arrayBuffer;
+  } else {
+    // Fallback for base64
+    imgData = item.dataURL.split(',')[1];
+  }
+  
   const W = 9144000, H = 5143500; // EMU for 16:9
 
-  zip.folder('ppt/media').file('image1.png', imgData, {base64:true});
+  zip.folder('ppt/media').file('image1.png', imgData, {base64:!item.dataURL.startsWith('http')});
 
   zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -522,8 +532,17 @@ async function exportAsZip(items) {
   const zip = new JSZip();
   
   for (const item of items) {
-    const imgData = item.dataURL.split(',')[1];
-    zip.file(`airdraw-${item.id}.png`, imgData, {base64:true});
+    // If dataURL is a Supabase Storage URL, fetch the image
+    if (item.dataURL.startsWith('http')) {
+      const response = await fetch(item.dataURL);
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      zip.file(`airdraw-${item.id}.png`, arrayBuffer);
+    } else {
+      // Fallback for base64
+      const imgData = item.dataURL.split(',')[1];
+      zip.file(`airdraw-${item.id}.png`, imgData, {base64:true});
+    }
   }
   
   const blob = await zip.generateAsync({type:'blob'});
@@ -606,9 +625,22 @@ async function createTypablePDF(item) {
   
   // Add the image below text
   if (currentY < a4Height - 150) { // Ensure we have space for image
+    let imageData = item.dataURL;
+    
+    // If dataURL is a Supabase Storage URL, fetch the image as base64
+    if (item.dataURL.startsWith('http')) {
+      const response = await fetch(item.dataURL);
+      const blob = await response.blob();
+      imageData = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+      });
+    }
+    
     // Load image to get dimensions
     const img = new Image();
-    img.src = item.dataURL;
+    img.src = imageData;
     await new Promise(resolve => {
       if (img.complete) resolve();
       else img.onload = resolve;
@@ -631,7 +663,7 @@ async function createTypablePDF(item) {
     const imgX = (a4Width - finalWidth) / 2;
     
     // Add image
-    pdf.addImage(item.dataURL, 'PNG', imgX, currentY, finalWidth, finalHeight);
+    pdf.addImage(imageData, 'PNG', imgX, currentY, finalWidth, finalHeight);
     
     // Add border around image
     pdf.setDrawColor(200, 200, 200);
@@ -731,9 +763,21 @@ async function exportAsPDFWithOCR(items) {
       pdf.setLineWidth(1);
       pdf.line(margin, 55, a4Width - margin, 55);
       
+      // Handle image data - fetch from Supabase Storage if needed
+      let imageData = item.dataURL;
+      if (item.dataURL.startsWith('http')) {
+        const response = await fetch(item.dataURL);
+        const blob = await response.blob();
+        imageData = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+      }
+      
       // Load image to get dimensions
       const img = new Image();
-      img.src = item.dataURL;
+      img.src = imageData;
       await new Promise(resolve => {
         if (img.complete) resolve();
         else img.onload = resolve;
@@ -757,7 +801,7 @@ async function exportAsPDFWithOCR(items) {
       const imgY = 80;
       
       // Add image
-      pdf.addImage(item.dataURL, 'PNG', imgX, imgY, finalWidth, finalHeight);
+      pdf.addImage(imageData, 'PNG', imgX, imgY, finalWidth, finalHeight);
       
       // Add border around image
       pdf.setDrawColor(200, 200, 200);
@@ -787,10 +831,21 @@ async function exportAsPPTXMultiple(items) {
   
   // Add all images to media folder
   const mediaFolder = zip.folder('ppt/media');
-  items.forEach((item, index) => {
-    const imgData = item.dataURL.split(',')[1];
-    mediaFolder.file(`image${index + 1}.png`, imgData, {base64:true});
-  });
+  for (const [index, item] of items.entries()) {
+    let imgData;
+    // If dataURL is a Supabase Storage URL, fetch the image
+    if (item.dataURL.startsWith('http')) {
+      const response = await fetch(item.dataURL);
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      imgData = arrayBuffer;
+      mediaFolder.file(`image${index + 1}.png`, imgData);
+    } else {
+      // Fallback for base64
+      imgData = item.dataURL.split(',')[1];
+      mediaFolder.file(`image${index + 1}.png`, imgData, {base64:true});
+    }
+  }
   
   // Create slides for each item
   const slides = [];
