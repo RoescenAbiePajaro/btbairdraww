@@ -454,15 +454,14 @@ function handleShapeDrag(x, y, gesture) {
         state.shapeDragOffX = x - closest.x;
         state.shapeDragOffY = y - closest.y;
         closest.el.classList.add('selected');
+        // Clear the shape from canvas once when drag starts
+        clearShapeFromCanvas(closest);
         showHint('✋ Dragging shape — open hand to move');
       }
     } else {
       // Move the shape
       const item = state.shapeItems.find(s => s.id === state.shapeDragId);
       if (item && item.el) {
-        // Clear previous shape from canvas
-        clearShapeFromCanvas(item);
-        
         const dx = x - state.shapeDragOffX - item.x;
         const dy = y - state.shapeDragOffY - item.y;
         
@@ -481,16 +480,17 @@ function handleShapeDrag(x, y, gesture) {
           // Redraw the element with updated coordinates
           drawShapeOnElement(item.el, item);
         }
-        
-        // Redraw at new position
-        drawShapeOnCanvas(item);
       }
     }
   } else {
     // Release drag
     if (state.shapeDragActive) {
       const item = state.shapeItems.find(s => s.id === state.shapeDragId);
-      if (item && item.el) item.el.classList.remove('selected');
+      if (item && item.el) {
+        item.el.classList.remove('selected');
+        // Redraw the shape on canvas at the new position when drag ends
+        drawShapeOnCanvas(item);
+      }
     }
     state.shapeDragActive = false;
     state.shapeDragId = null;
@@ -606,9 +606,21 @@ function drawShapeOnElement(el, item) {
     const size = Math.max(item.width, item.height);
     el.style.width = size + 'px';
     el.style.height = size + 'px';
+    el.innerHTML = `<svg width="100%" height="100%" style="position:absolute;top:0;left:0">
+      <rect x="0" y="0" width="${size}" height="${size}" fill="none" stroke="${item.color}" stroke-width="3"/>
+    </svg>`;
+    el.style.border = 'none';
   } else if (item.type === 'triangle') {
     el.innerHTML = `<svg width="100%" height="100%" style="position:absolute;top:0;left:0">
       <polygon points="${item.width/2},0 ${item.width},${item.height} 0,${item.height}" fill="none" stroke="${item.color}" stroke-width="3"/>
+    </svg>`;
+    el.style.border = 'none';
+  } else if (item.type === 'circle') {
+    const radius = Math.min(item.width, item.height) / 2;
+    const cx = item.width / 2;
+    const cy = item.height / 2;
+    el.innerHTML = `<svg width="100%" height="100%" style="position:absolute;top:0;left:0">
+      <circle cx="${cx}" cy="${cy}" r="${radius}" fill="none" stroke="${item.color}" stroke-width="3"/>
     </svg>`;
     el.style.border = 'none';
   }
@@ -639,11 +651,18 @@ function drawShapeOnCanvas(item) {
     dCtx.lineTo(item.x, item.y + item.height);
     dCtx.closePath();
     dCtx.stroke();
+  } else if (item.type === 'circle') {
+    const radius = Math.min(item.width, item.height) / 2;
+    const cx = item.x + item.width / 2;
+    const cy = item.y + item.height / 2;
+    dCtx.beginPath();
+    dCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+    dCtx.stroke();
   }
 }
 
 function clearShapeFromCanvas(item) {
-  const padding = state.brushSize + 4;
+  const padding = state.brushSize + 10;
   
   if (item.type === 'line') {
     // For lines, clear a bounding box around the entire line

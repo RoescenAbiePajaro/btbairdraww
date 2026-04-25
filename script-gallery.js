@@ -80,6 +80,13 @@ async function saveArtwork() {
       ctx.lineTo(item.x, item.y + item.height);
       ctx.closePath();
       ctx.stroke();
+    } else if (item.type === 'circle') {
+      const radius = Math.min(item.width, item.height) / 2;
+      const cx = item.x + item.width / 2;
+      const cy = item.y + item.height / 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.stroke();
     }
   });
 
@@ -270,15 +277,27 @@ async function loadArtwork(item) {
       el.style.left = data.x + 'px';
       el.style.top = data.y + 'px';
       el.style.color = data.color;
+      el.dataset.id = data.id;
+      el.contentEditable = 'false';
       textLayer.appendChild(el);
       
-      state.textItems.push({
+      const textItem = {
         id: data.id,
         text: data.text,
         x: data.x,
         y: data.y,
         color: data.color,
         el: el
+      };
+      state.textItems.push(textItem);
+      
+      // Add mouse drag support
+      el.addEventListener('mousedown', e => startMouseDrag(e, textItem));
+      // Add double-click to edit
+      el.addEventListener('dblclick', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        startEditing(textItem);
       });
     });
   }
