@@ -16,6 +16,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
 :root {
   --bg: #0a0a0f;
@@ -217,8 +218,19 @@ body {
 .gallery-header {
   width:100%; display:flex; align-items:center; justify-content:space-between;
   margin-bottom:24px; padding-bottom:16px; border-bottom:1px solid var(--border);
+  flex-wrap:wrap; gap:12px;
 }
 .gallery-title { font-family:'Playfair Display',serif; font-size:1.8rem; font-style:italic; }
+.gallery-controls { display:flex; align-items:center; gap:12px; }
+.select-all-wrapper { display:flex; align-items:center; gap:8px; }
+.select-all-checkbox { width:20px; height:20px; cursor:pointer; accent-color:var(--pink); }
+.export-btn {
+  background:var(--pink); color:#fff; border:none; border-radius:10px;
+  font-family:'Space Mono',monospace; font-size:.7rem; font-weight:700;
+  padding:8px 16px; cursor:pointer; display:none; transition:all .15s;
+}
+.export-btn.visible { display:block; }
+.export-btn:hover { transform:scale(1.05); box-shadow:0 4px 12px rgba(255,45,120,.4); }
 .back-btn {
   background:transparent; border:1px solid var(--border); border-radius:10px;
   color:var(--text); font-family:'Space Mono',monospace; font-size:.7rem;
@@ -232,7 +244,13 @@ body {
 }
 .gallery-card {
   background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
-  overflow:hidden; transition:transform .2s, border-color .2s;
+  overflow:hidden; transition:transform .2s, border-color .2s; position:relative;
+}
+.gallery-card.selected { border-color:var(--pink); box-shadow:0 0 20px rgba(255,45,120,.3); }
+.card-checkbox {
+  position:absolute; top:10px; left:10px; width:22px; height:22px;
+  cursor:pointer; accent-color:var(--pink); z-index:10;
+  background:rgba(10,10,15,.8); border-radius:4px;
 }
 .gallery-card:hover { transform:translateY(-4px); border-color:rgba(255,45,120,.3); }
 .gallery-thumb { width:100%; aspect-ratio:16/9; object-fit:cover; display:block; }
@@ -244,7 +262,7 @@ body {
   border-radius:8px; color:var(--text); font-family:'Space Mono',monospace; font-size:.6rem;
   padding:6px 4px; cursor:pointer; text-align:center; transition:all .15s;
 }
-.dl-btn:hover { background:var(--pink); border-color:var(--pink); color:#fff; }
+.export-format-btn:hover { background:var(--pink); border-color:var(--pink); color:#fff; }
 .dl-btn.pdf { --accent-c: var(--pink); }
 .dl-btn.pptx { --accent-c: var(--yellow); }
 .load-btn {
@@ -256,6 +274,25 @@ body {
 .gallery-empty {
   width:100%; text-align:center; color:var(--muted); padding:80px 0; font-size:.85rem;
   grid-column: 1/-1;
+}
+
+/* ─── EXPORT MODAL ─── */
+#exportModal {
+  position:fixed; inset:0; background:rgba(0,0,0,.8); backdrop-filter:blur(10px);
+  z-index:9999; display:none; align-items:center; justify-content:center;
+}
+#exportModal .export-format-btn {
+  background:var(--surface2); border:1px solid var(--border); border-radius:12px;
+  padding:16px; color:var(--text); font-family:'Space Mono',monospace; font-size:.85rem;
+  cursor:pointer; transition:all .15s; display:flex; align-items:center; gap:12px;
+}
+#exportModal .export-format-btn:hover {
+  background:var(--pink); border-color:var(--pink); color:#fff;
+}
+#exportModal .cancel-export-btn {
+  margin-top:20px; width:100%; background:transparent; border:1px solid var(--border);
+  border-radius:10px; padding:12px; color:var(--muted); font-family:'Space Mono',monospace;
+  font-size:.75rem; cursor:pointer; transition:all .15s;
 }
 
 /* ─── LOADING OVERLAY ─── */
@@ -425,10 +462,48 @@ body {
 <div class="screen hidden" id="gallery">
   <div class="gallery-header">
     <div class="gallery-title">Gallery</div>
-    <button class="back-btn" id="backBtn">← Back</button>
+    <div class="gallery-controls">
+      <div class="select-all-wrapper">
+        <input type="checkbox" class="select-all-checkbox" id="selectAllCheckbox">
+        <span style="font-size:.7rem;color:var(--muted)">Select All</span>
+      </div>
+      <button class="export-btn" id="exportBtn">📤 Export Selected</button>
+      <button class="back-btn" id="backBtn">← Back</button>
+    </div>
   </div>
   <div class="gallery-grid" id="galleryGrid">
     <div class="gallery-empty">No artwork saved yet.<br>Draw something and hit 💾</div>
+  </div>
+</div>
+
+<!-- ─── EXPORT MODAL ─── -->
+<div id="exportModal" style="position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);z-index:9999;display:none;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px;max-width:400px;width:90%">
+    <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;font-style:italic;margin-bottom:24px;color:var(--text)">Export Format</h3>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <button class="export-format-btn" data-format="pdf" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;color:var(--text);font-family:'Space Mono',monospace;font-size:.85rem;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px">
+        <span style="font-size:1.5rem">📄</span>
+        <div style="text-align:left">
+          <div style="font-weight:700">PDF with OCR</div>
+          <div style="font-size:.65rem;color:var(--muted)">Convert text to typable format with image</div>
+        </div>
+      </button>
+      <button class="export-format-btn" data-format="pptx" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;color:var(--text);font-family:'Space Mono',monospace;font-size:.85rem;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px">
+        <span style="font-size:1.5rem">📊</span>
+        <div style="text-align:left">
+          <div style="font-weight:700">PowerPoint</div>
+          <div style="font-size:.65rem;color:var(--muted)">Export as PPTX slideshow</div>
+        </div>
+      </button>
+      <button class="export-format-btn" data-format="zip" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;color:var(--text);font-family:'Space Mono',monospace;font-size:.85rem;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px">
+        <span style="font-size:1.5rem">📦</span>
+        <div style="text-align:left">
+          <div style="font-weight:700">ZIP Archive</div>
+          <div style="font-size:.65rem;color:var(--muted)">Download all images as ZIP</div>
+        </div>
+      </button>
+    </div>
+    <button id="cancelExportBtn" style="margin-top:20px;width:100%;background:transparent;border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--muted);font-family:'Space Mono',monospace;font-size:.75rem;cursor:pointer;transition:all .15s">Cancel</button>
   </div>
 </div>
 
@@ -461,6 +536,7 @@ const state = {
   prevGesture: 'none',
   handsDetected: 0,
   gallery: [],          // {dataURL, timestamp}[]
+  selectedGalleryItems: new Set(), // IDs of selected items
   textItems: [],        // {id, text, x, y, color, el}[]
   selectedText: null,
   textColor: '#ffffff',
@@ -508,6 +584,10 @@ const textLayer     = document.getElementById('textLayer');
 const brushInfo     = document.getElementById('brushInfo');
 const doneEditingBtn = document.getElementById('doneEditingBtn');
 const shapeControls = document.getElementById('shapeControls');
+const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+const exportBtn = document.getElementById('exportBtn');
+const exportModal = document.getElementById('exportModal');
+const cancelExportBtn = document.getElementById('cancelExportBtn');
 
 const colorMap = { black:'#111111', pink:'#ff2d78', yellow:'#ffe94a', blue:'#2d8bff', green:'#2dff9a' };
 
@@ -1358,6 +1438,36 @@ document.getElementById('clearBtn').addEventListener('click', clearCanvas);
 document.getElementById('galleryBtn').addEventListener('click', () => showScreen('gallery'));
 document.getElementById('backBtn').addEventListener('click', () => showScreen('main'));
 
+// Select all checkbox
+selectAllCheckbox.addEventListener('change', (e) => {
+  if (e.target.checked) {
+    state.gallery.forEach(item => state.selectedGalleryItems.add(item.id));
+  } else {
+    state.selectedGalleryItems.clear();
+  }
+  renderGallery();
+});
+
+// Export button
+exportBtn.addEventListener('click', () => {
+  exportModal.style.display = 'flex';
+});
+
+// Cancel export
+cancelExportBtn.addEventListener('click', () => {
+  exportModal.style.display = 'none';
+});
+
+// Export format buttons
+document.querySelectorAll('.export-format-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const format = btn.dataset.format;
+    exportModal.style.display = 'none';
+    const selectedItems = state.gallery.filter(item => state.selectedGalleryItems.has(item.id));
+    await exportSelectedItems(selectedItems, format);
+  });
+});
+
 function clearCanvas() {
   dCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
   state.textItems.forEach(item => item.el.remove());
@@ -1453,13 +1563,19 @@ async function saveArtwork() {
 function renderGallery() {
   if (state.gallery.length === 0) {
     galleryGrid.innerHTML = '<div class="gallery-empty">No artwork saved yet.<br>Draw something and hit 💾</div>';
+    exportBtn.classList.remove('visible');
     return;
   }
   galleryGrid.innerHTML = '';
   state.gallery.forEach(item => {
     const card = document.createElement('div');
     card.className = 'gallery-card';
+    card.dataset.id = item.id;
+    if (state.selectedGalleryItems.has(item.id)) {
+      card.classList.add('selected');
+    }
     card.innerHTML = `
+      <input type="checkbox" class="card-checkbox" data-id="${item.id}" ${state.selectedGalleryItems.has(item.id) ? 'checked' : ''}>
       <img class="gallery-thumb" src="${item.dataURL}" alt="Artwork" data-id="${item.id}">
       <div class="gallery-actions">
         <button class="load-btn" data-id="${item.id}">📂 Load</button>
@@ -1469,6 +1585,23 @@ function renderGallery() {
       </div>
     `;
     galleryGrid.appendChild(card);
+  });
+
+  // Card checkbox handlers
+  galleryGrid.querySelectorAll('.card-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', (e) => {
+      const id = parseInt(e.target.dataset.id);
+      const card = e.target.closest('.gallery-card');
+      if (e.target.checked) {
+        state.selectedGalleryItems.add(id);
+        card.classList.add('selected');
+      } else {
+        state.selectedGalleryItems.delete(id);
+        card.classList.remove('selected');
+      }
+      updateExportButton();
+      updateSelectAllCheckbox();
+    });
   });
 
   galleryGrid.querySelectorAll('.load-btn').forEach(btn => {
@@ -1487,6 +1620,27 @@ function renderGallery() {
       if (item) downloadItem(item, type);
     });
   });
+
+  updateExportButton();
+  updateSelectAllCheckbox();
+}
+
+function updateExportButton() {
+  if (state.selectedGalleryItems.size > 0) {
+    exportBtn.classList.add('visible');
+    exportBtn.textContent = `📤 Export Selected (${state.selectedGalleryItems.size})`;
+  } else {
+    exportBtn.classList.remove('visible');
+  }
+}
+
+function updateSelectAllCheckbox() {
+  if (state.gallery.length === 0) {
+    selectAllCheckbox.checked = false;
+    return;
+  }
+  const allSelected = state.gallery.every(item => state.selectedGalleryItems.has(item.id));
+  selectAllCheckbox.checked = allSelected && state.selectedGalleryItems.size > 0;
 }
 
 async function downloadItem(item, type) {
@@ -1683,6 +1837,288 @@ xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   const a = document.createElement('a');
   a.href = url;
   a.download = `airdraw-${item.id}.pptx`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+
+async function exportSelectedItems(items, format) {
+  if (items.length === 0) {
+    showToast('No items selected');
+    return;
+  }
+
+  showLoading(`Exporting ${items.length} items as ${format.toUpperCase()}…`);
+  
+  try {
+    if (format === 'zip') {
+      await exportAsZip(items);
+    } else if (format === 'pdf') {
+      await exportAsPDFWithOCR(items);
+    } else if (format === 'pptx') {
+      await exportAsPPTXMultiple(items);
+    }
+    showToast(`Exported ${items.length} items as ${format.toUpperCase()}!`);
+  } catch(e) {
+    showToast('Export failed: ' + e.message);
+    console.error(e);
+  }
+  hideLoading();
+}
+
+async function exportAsZip(items) {
+  const JSZip = window.JSZip;
+  const zip = new JSZip();
+  
+  for (const item of items) {
+    const imgData = item.dataURL.split(',')[1];
+    zip.file(`airdraw-${item.id}.png`, imgData, {base64:true});
+  }
+  
+  const blob = await zip.generateAsync({type:'blob'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `airdraw-export-${Date.now()}.zip`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+
+async function exportAsPDFWithOCR(items) {
+  // Check if required libraries are available
+  if (!window.jspdf) {
+    showToast('jsPDF library not loaded');
+    throw new Error('jsPDF library not available');
+  }
+  
+  if (!window.Tesseract) {
+    showToast('Tesseract.js library not loaded');
+    throw new Error('Tesseract.js library not available');
+  }
+  
+  const { jsPDF } = window.jspdf;
+  
+  // Create a single PDF for all items
+  const pdf = new jsPDF({ orientation:'portrait', unit:'px', format:'a4' });
+  const a4Width = 595.28;
+  const a4Height = 841.89;
+  
+  for (const item of items) {
+    showLoading(`Processing OCR for item ${items.indexOf(item) + 1}/${items.length}…`);
+    
+    try {
+      // Create canvas for OCR
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = item.dataURL;
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = () => reject(new Error('Failed to load image'));
+      });
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth || 1280;
+      canvas.height = img.naturalHeight || 720;
+      const ctx = canvas.getContext('2d');
+      
+      // Draw the image (text is already composited in the saved image)
+      ctx.drawImage(img, 0, 0);
+      
+      // Perform OCR using Tesseract.js
+      let ocrText = '';
+      try {
+        const result = await Tesseract.recognize(canvas, 'eng', {
+          logger: m => {}
+        });
+        ocrText = result.data.text.trim();
+        console.log('OCR Result:', ocrText);
+      } catch (e) {
+        console.warn('OCR failed:', e);
+        ocrText = '';
+      }
+      
+      // Add text page if text exists (separate A4 page)
+      if (ocrText && ocrText.length > 0) {
+        pdf.setPage(pdf.internal.getNumberOfPages());
+        
+        // Add header
+        pdf.setFontSize(24);
+        pdf.setFont('helvetica', 'bold');
+        const headerText = 'Beyond The Brush';
+        const headerWidth = pdf.getTextWidth(headerText);
+        pdf.text(headerText, (a4Width - headerWidth) / 2, 50);
+        
+        // Add line below header
+        pdf.setDrawColor(180, 180, 180);
+        pdf.setLineWidth(1);
+        pdf.line(50, 60, a4Width - 50, 60);
+        
+        // Add detected text
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(0, 0, 0);
+        
+        const textY = 90;
+        const maxWidth = a4Width - 100;
+        const lines = pdf.splitTextToSize(ocrText, maxWidth);
+        
+        lines.forEach((line, index) => {
+          if (textY + (index * 20) < a4Height - 50) {
+            pdf.text(line, 50, textY + (index * 20));
+          }
+        });
+        
+        // Add new page for image with custom dimensions
+        pdf.addPage([canvas.width, canvas.height]);
+      } else {
+        // No text, just add image page
+        pdf.addPage([canvas.width, canvas.height]);
+      }
+      
+      // Add image at full resolution
+      pdf.addImage(item.dataURL, 'PNG', 0, 0, canvas.width, canvas.height);
+      
+      // Add new A4 page for next item (if any)
+      if (items.indexOf(item) < items.length - 1) {
+        pdf.addPage([a4Width, a4Height]);
+      }
+    } catch (e) {
+      console.error('Error processing item:', e);
+      showToast(`Error processing item: ${e.message}`);
+      throw e;
+    }
+  }
+  
+  try {
+    pdf.save(`airdraw-ocr-export-${Date.now()}.pdf`);
+  } catch (e) {
+    console.error('Error saving PDF:', e);
+    showToast('Error saving PDF');
+    throw e;
+  }
+}
+
+async function exportAsPPTXMultiple(items) {
+  const JSZip = window.JSZip;
+  const zip = new JSZip();
+  const W = 9144000, H = 5143500; // EMU for 16:9
+  
+  // Add all images to media folder
+  const mediaFolder = zip.folder('ppt/media');
+  items.forEach((item, index) => {
+    const imgData = item.dataURL.split(',')[1];
+    mediaFolder.file(`image${index + 1}.png`, imgData, {base64:true});
+  });
+  
+  // Create slides for each item
+  const slides = [];
+  const slideRels = [];
+  
+  items.forEach((item, index) => {
+    const slideNum = index + 1;
+    slides.push(`<?xml version="1.0" encoding="UTF-8"?>
+<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<p:cSld><p:spTree>
+<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>
+<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${W}" cy="${H}"/><a:chOff x="0" y="0"/><a:chExt cx="${W}" cy="${H}"/></a:xfrm></p:grpSpPr>
+<p:pic><p:nvPicPr><p:cNvPr id="2" name="img${slideNum}"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr>
+<p:blipFill><a:blip r:embed="rId1"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>
+<p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${W}" cy="${H}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>
+</p:pic></p:spTree></p:cSld>
+</p:sld>`);
+    
+    slideRels.push(`<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image${slideNum}.png"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>
+</Relationships>`);
+  });
+  
+  // Content Types
+  let overrides = `<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
+<Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>
+<Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>
+<Default Extension="png" ContentType="image/png"/>`;
+  
+  items.forEach((item, index) => {
+    overrides += `\n<Override PartName="/ppt/slides/slide${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`;
+  });
+  
+  zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+${overrides}
+</Types>`);
+  
+  // Root rels
+  zip.folder('_rels').file('.rels', `<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
+</Relationships>`);
+  
+  // Presentation rels
+  let slideRelsList = items.map((item, index) => 
+    `<Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${index + 1}.xml"/>`
+  ).join('\n');
+  
+  zip.folder('ppt/_rels').file('presentation.xml.rels', `<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+${slideRelsList}
+<Relationship Id="rId${items.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>
+</Relationships>`);
+  
+  // Presentation XML
+  let slideIdList = items.map((item, index) => 
+    `<p:sldId id="${256 + index}" r:id="rId${index + 1}"/>`
+  ).join('\n');
+  
+  zip.file('ppt/presentation.xml', `<?xml version="1.0" encoding="UTF-8"?>
+<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId${items.length + 1}"/></p:sldMasterIdLst>
+<p:sldIdLst>${slideIdList}</p:sldIdLst>
+<p:sldSz cx="${W}" cy="${H}"/><p:notesSz cx="6858000" cy="9144000"/>
+</p:presentation>`);
+  
+  // Add slides and their rels
+  const slidesFolder = zip.folder('ppt/slides');
+  const slidesRelsFolder = zip.folder('ppt/slides/_rels');
+  
+  items.forEach((item, index) => {
+    const slideNum = index + 1;
+    slidesFolder.file(`slide${slideNum}.xml`, slides[index]);
+    slidesRelsFolder.file(`slide${slideNum}.xml.rels`, slideRels[index]);
+  });
+  
+  // Slide master and layout (minimal)
+  zip.folder('ppt/slideMasters/_rels').file('slideMaster1.xml.rels', `<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>
+</Relationships>`);
+  zip.folder('ppt/slideMasters').file('slideMaster1.xml', `<?xml version="1.0" encoding="UTF-8"?>
+<p:sldMaster xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr></p:spTree></p:cSld>
+<p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/>
+<p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst>
+</p:sldMaster>`);
+  
+  zip.folder('ppt/slideLayouts/_rels').file('slideLayout1.xml.rels', `<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster1.xml"/>
+</Relationships>`);
+  zip.folder('ppt/slideLayouts').file('slideLayout1.xml', `<?xml version="1.0" encoding="UTF-8"?>
+<p:sldLayout xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" type="blank">
+<p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr></p:spTree></p:cSld>
+</p:sldLayout>`);
+  
+  const blob = await zip.generateAsync({type:'blob'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `airdraw-multiple-${Date.now()}.pptx`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 3000);
 }
