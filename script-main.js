@@ -85,11 +85,6 @@ templateImg.src = 'Beyond The Brush Template.png';
 function resizeCanvases() {
   const w = window.innerWidth, h = window.innerHeight;
   [drawCanvas, handCanvas, templateCanvas].forEach(c => { c.width=w; c.height=h; });
-  
-  // Set white background for draw canvas
-  dCtx.fillStyle = '#ffffff';
-  dCtx.fillRect(0, 0, w, h);
-  
   drawTemplate();
 }
 window.addEventListener('resize', resizeCanvases);
@@ -178,14 +173,14 @@ function smoothGesture(g) {
 // DRAWING LOGIC
 // ═══════════════════════════════════════════════════════
 
-// Erase at a given point — paints white
+// Erase at a given point — always uses destination-out
 function eraseAt(x, y) {
   const r = state.eraseRadius;
   dCtx.save();
-  dCtx.globalCompositeOperation = 'source-over';
+  dCtx.globalCompositeOperation = 'destination-out';
   dCtx.beginPath();
   dCtx.arc(x, y, r, 0, Math.PI * 2);
-  dCtx.fillStyle = '#ffffff';
+  dCtx.fillStyle = 'rgba(0,0,0,1)';
   dCtx.fill();
   dCtx.restore();
 
@@ -379,8 +374,7 @@ function restoreState(historyState) {
   // Restore canvas
   const img = new Image();
   img.onload = () => {
-    dCtx.fillStyle = '#ffffff';
-    dCtx.fillRect(0, 0, drawCanvas.width, drawCanvas.height);
+    dCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
     dCtx.drawImage(img, 0, 0);
   };
   img.src = historyState.canvasData;
