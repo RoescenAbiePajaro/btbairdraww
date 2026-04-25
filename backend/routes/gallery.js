@@ -1,6 +1,6 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import Gallery from '../models/Gallery.js';
+import supabaseService from '../services/supabaseService.js';
 
 const router = express.Router();
 
@@ -25,9 +25,10 @@ const authenticateToken = (req, res, next) => {
 // Get user's gallery
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const gallery = await Gallery.find({ userId: req.user.id }).sort({ createdAt: -1 });
+    const gallery = await supabaseService.getUserGallery(req.user.id);
     res.json(gallery);
   } catch (error) {
+    console.error('Error fetching gallery:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -35,25 +36,20 @@ router.get('/', authenticateToken, async (req, res) => {
 // Save artwork to gallery
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { dataURL, timestamp, id, drawingData, textItemsData, shapeItemsData } = req.body;
+    const { dataURL, timestamp, drawingData, textItemsData, shapeItemsData } = req.body;
     
-    // Get the next ID for this user
-    const lastGallery = await Gallery.findOne({ userId: req.user.id }).sort({ id: -1 });
-    const nextId = lastGallery ? lastGallery.id + 1 : 1;
-    
-    const galleryItem = new Gallery({
-      userId: req.user.id,
+    const galleryItem = await supabaseService.saveToGallery(
+      req.user.id,
       dataURL,
       timestamp,
-      id: nextId,
       drawingData,
       textItemsData,
       shapeItemsData
-    });
+    );
     
-    await galleryItem.save();
     res.status(201).json(galleryItem);
   } catch (error) {
+    console.error('Error saving to gallery:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -63,10 +59,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     console.log('Delete request - User ID:', req.user.id, 'Artwork ID:', req.params.id);
     
-    const result = await Gallery.findOneAndDelete({ 
-      userId: req.user.id, 
-      id: parseInt(req.params.id) 
-    });
+    const result = await supabaseService.deleteFromGallery(req.user.id, req.params.id);
     
     console.log('Delete result:', result);
     

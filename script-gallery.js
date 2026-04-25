@@ -49,6 +49,9 @@ deleteBtn.addEventListener('click', async () => {
       state.gallery = state.gallery.filter(item => !state.selectedGalleryItems.has(item.id));
       state.selectedGalleryItems.clear();
       
+      // Update localStorage
+      localStorage.setItem('airdraw_gallery', JSON.stringify(state.gallery));
+      
       renderGallery();
       hideLoading();
       showToast(`Deleted ${selectedItems.length} artwork${selectedItems.length > 1 ? 's' : ''}`);
@@ -181,6 +184,9 @@ async function saveArtwork() {
       textItemsData,
       shapeItemsData
     });
+    
+    // Update localStorage
+    localStorage.setItem('airdraw_gallery', JSON.stringify(state.gallery));
     
     renderGallery();
   } catch (error) {

@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js';
 import galleryRoutes from './routes/gallery.js';
+import supabaseService from './services/supabaseService.js';
 
 dotenv.config();
 
@@ -24,15 +25,26 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log('Connected to MongoDB');
+// Connect to MongoDB and initialize Supabase
+async function initializeServer() {
+  try {
+    // Connect to MongoDB for authentication
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log('Connected to MongoDB for authentication');
+    
+    // Initialize Supabase service for gallery storage
+    console.log('Initializing Supabase service for gallery...');
+    await supabaseService.ensureBucket();
+    console.log('Supabase service initialized successfully');
+    
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+      console.log('Using MongoDB for auth, Supabase for gallery storage');
     });
-  })
-  .catch((error) => {
-    console.error('MongoDB connection error:', error);
+  } catch (error) {
+    console.error('Failed to initialize server:', error);
     process.exit(1);
-  });
+  }
+}
+
+initializeServer();
