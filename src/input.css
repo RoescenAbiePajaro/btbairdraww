@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom CSS variables and existing styles */
+:root {
+  --bg: #0a0a0f;
+  --surface: #13131a;
+  --surface2: #1c1c28;
+  --border: rgba(255,255,255,0.08);
+  --text: #f0f0ff;
+  --muted: #6b6b8a;
+  --accent: #ff2d78;
+  --pink: #ff2d78;
+  --yellow: #ffe94a;
+  --blue: #2d8bff;
+  --green: #2dff9a;
+  --black: #111111;
+  --white: #ffffff;
+  --radius: 16px;
+}

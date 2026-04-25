@@ -729,7 +729,7 @@ async function exportAsPDFWithOCR(items) {
         // Add header
         pdf.setFontSize(20);
         pdf.setFont('helvetica', 'bold');
-        const headerText = `Beyond The Brush - Artwork ${i + 1}`;
+        const headerText = `Beyond The Brush ${i + 1}`;
         const headerWidth = pdf.getTextWidth(headerText);
         pdf.text(headerText, (a4Width - headerWidth) / 2, 40);
         
@@ -764,7 +764,7 @@ async function exportAsPDFWithOCR(items) {
       // Add header for image page
       pdf.setFontSize(20);
       pdf.setFont('helvetica', 'bold');
-      const imageHeaderText = `Beyond The Brush - Artwork ${i + 1} (Image)`;
+      const imageHeaderText = `Beyond The Brush ${i + 1}`;
       const imageHeaderWidth = pdf.getTextWidth(imageHeaderText);
       pdf.text(imageHeaderText, (a4Width - imageHeaderWidth) / 2, 40);
       
@@ -826,7 +826,7 @@ async function exportAsPDFWithOCR(items) {
   }
   
   try {
-    pdf.save(`airdraw-batch-export-${Date.now()}.pdf`);
+    pdf.save(`beyond-the-brush-${Date.now()}.pdf`);
   } catch (e) {
     console.error('Error saving PDF:', e);
     showToast('Error saving PDF');

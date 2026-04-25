@@ -1,0 +1,13 @@
+{
+  "name": "airdraw-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for AirDraw application",
+  "scripts": {
+    "build-css": "tailwindcss -i ./src/input.css -o ./style.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32"
+  }
+}
