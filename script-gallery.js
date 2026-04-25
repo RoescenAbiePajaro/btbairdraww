@@ -698,7 +698,23 @@ function showScreen(name) {
   [splash, mainScreen, galleryScreen].forEach(s => s.classList.add('hidden'));
   const map = { splash, main:mainScreen, gallery:galleryScreen };
   map[name].classList.remove('hidden');
-  if (name === 'gallery') renderGallery();
+  
+  // Hide/show main screen elements based on active screen
+  const mainElements = [drawCanvas, handCanvas, templateCanvas, videoEl, cursorDot, eraserRing, eraseFlash, 
+                        document.getElementById('toolbar'), document.getElementById('hud'), 
+                        document.getElementById('topRight'), document.getElementById('gestureHint'),
+                        textControls, shapeControls, doneEditingBtn, document.getElementById('brushInfo')];
+  
+  if (name === 'gallery') {
+    // Hide all main screen elements
+    mainElements.forEach(el => { if(el) el.style.display = 'none'; });
+    textLayer.style.display = 'none';
+    renderGallery();
+  } else {
+    // Show main screen elements
+    mainElements.forEach(el => { if(el) el.style.display = ''; });
+    textLayer.style.display = '';
+  }
 }
 
 // ═══════════════════════════════════════════════════════
