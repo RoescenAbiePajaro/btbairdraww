@@ -1100,21 +1100,24 @@ body {
 
 /* ─── SPLASH ─── */
 #splash {
-  background: radial-gradient(ellipse at 30% 60%, rgba(255,45,120,.15) 0%, transparent 60%),
-              radial-gradient(ellipse at 80% 20%, rgba(45,139,255,.12) 0%, transparent 55%),
-              var(--bg);
+  background: black;
 }
-.splash-logo { font-family:'Playfair Display',serif; font-size:clamp(2.5rem,8vw,5rem); font-style:italic; color:#fff; letter-spacing:-2px; margin-bottom:8px; }
-.splash-logo span { color: var(--pink); }
+.splash-icon { 
+  width: 160px; 
+  height: 160px; 
+  margin-bottom: 16px; 
+  border-radius: 12px;
+}
+.splash-logo { font-family:'Segoe UI',serif; font-size:clamp(2.5rem,8vw,5rem); color:#fff; letter-spacing:-2px; margin-bottom:8px; }
+.splash-logo span { color: var(--white); }
 .splash-sub { color: var(--muted); font-size:.75rem; letter-spacing:4px; text-transform:uppercase; margin-bottom:48px; }
 .splash-btn {
   background: var(--pink); color:#fff; border:none; border-radius:40px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size:1rem; font-weight:700;
-  padding:18px 48px; cursor:pointer; letter-spacing:1px;
-  box-shadow: 0 0 40px rgba(255,45,120,.4);
+  padding:18px 48px; cursor:pointer; letter-spacing:1px;;
   transition: transform .15s, box-shadow .15s;
 }
-.splash-btn:hover { transform:scale(1.04); box-shadow:0 0 60px rgba(255,45,120,.6); }
+.splash-btn:hover { transform:scale(1.04);  }
 .splash-hint { margin-top:24px; color:var(--muted); font-size:.7rem; text-align:center; line-height:1.8; }
 
 /* ─── MAIN CANVAS SCREEN ─── */
