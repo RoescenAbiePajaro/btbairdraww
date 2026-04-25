@@ -1,3 +1,5 @@
+
+// sw.js
 const CACHE = 'airdraw-v1';
 const ASSETS = [
   './',
