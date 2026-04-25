@@ -216,9 +216,9 @@ function renderGallery() {
       <img class="gallery-thumb" src="${item.dataURL}" alt="Artwork" data-id="${item.id}" onerror="this.style.display='none';this.parentElement.querySelector('.error-placeholder').style.display='block';">
       <div class="error-placeholder" style="display:none;padding:20px;text-align:center;color:var(--muted);font-size:0.7rem;">Image unavailable</div>
       <div class="gallery-actions">
-        <button class="load-btn" data-id="${item.id}">📂 Load</button>
-        <button class="dl-btn" data-id="${item.id}" data-type="png">⬇ PNG</button>
-        <button class="dl-btn pdf" data-id="${item.id}" data-type="pdf">⬇ PDF+Text</button>
+        <button class="load-btn" data-id="${item.id}">📂Load</button>
+        <button class="dl-btn" data-id="${item.id}" data-type="png">PNG</button>
+        <button class="dl-btn pdf" data-id="${item.id}" data-type="pdf">PDF+Text</button>
         <button class="dl-btn pptx" data-id="${item.id}" data-type="pptx">⬇ PPTX</button>
       </div>
     `;
