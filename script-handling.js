@@ -166,7 +166,7 @@ function onHandResults(results) {
 
   // Gesture label
   const gLabels = { draw:'☝ DRAWING', erase:'✋ ERASING', peace:'✌ PEACE', none:'✊ IDLE' };
-  gestureLabel.textContent = state.mode === 'eraser' ? '◎ ERASER ON' : (gLabels[gesture] || '—');
+  
 
   // Draw hand skeleton
   drawHandSkeleton(mirroredLandmarks, gesture, w, h, isErasing, palmX, palmY, r);
@@ -311,9 +311,9 @@ document.getElementById('addTextBtn').addEventListener('click', addText);
 textInput.addEventListener('keydown', e => { if(e.key==='Enter') addText(); });
 
 // Shape selection buttons
-document.querySelectorAll('.shape-btn').forEach(btn => {
+document.querySelectorAll('#shapeRow .tool-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#shapeRow .tool-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     state.currentShape = btn.dataset.shape;
   });

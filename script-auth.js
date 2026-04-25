@@ -44,16 +44,16 @@ function updateUserInfo() {
       galleryTitle.textContent = `${currentUser.fullName}'s Gallery`;
     }
     
-    // Add logout button
-    const galleryControls = document.querySelector('.gallery-controls');
-    if (galleryControls && !document.getElementById('logoutBtn')) {
+    // Add logout button next to HUD
+    const hud = document.getElementById('hud');
+    if (hud && !document.getElementById('logoutBtn')) {
       const logoutBtn = document.createElement('button');
       logoutBtn.id = 'logoutBtn';
       logoutBtn.className = 'logout-btn';
-      logoutBtn.textContent = '🚪 Logout';
-      logoutBtn.style.cssText = 'background:rgba(255,45,120,0.2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:"Space Mono",monospace;font-size:.7rem;cursor:pointer;transition:all .15s;margin-left:8px;';
+      logoutBtn.textContent = 'Logout';
+      logoutBtn.style.cssText = 'background:#ee4444;border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:"Space Mono",monospace;font-size:.7rem;cursor:pointer;transition:all .15s;margin-left:8px;';
       logoutBtn.addEventListener('click', logout);
-      galleryControls.appendChild(logoutBtn);
+      hud.appendChild(logoutBtn);
     }
   }
 }
