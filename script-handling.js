@@ -300,6 +300,7 @@ document.querySelectorAll('.shape-btn').forEach(btn => {
 function addText() {
   const txt = textInput.value.trim();
   if (!txt) return;
+  saveState();
   const id = ++textIdCounter;
   const x = window.innerWidth/2 - 100;
   const y = window.innerHeight/2 - 20;
@@ -357,20 +358,21 @@ function startEditing(item) {
   if (state.editingText) {
     stopEditing();
   }
+  saveState();
   state.editingText = item;
   item.el.contentEditable = 'true';
   item.el.classList.add('editing');
   item.el.focus();
-  
+
   // Position done button near the text
   const rect = item.el.getBoundingClientRect();
   doneEditingBtn.style.left = (rect.left + rect.width / 2 - 50) + 'px';
   doneEditingBtn.style.top = (rect.bottom + 10) + 'px';
   doneEditingBtn.classList.add('visible');
-  
+
   // Live update while typing
   item.el.addEventListener('input', handleTextInput);
-  
+
   showToast('Editing text - type to update live');
 }
 
@@ -411,6 +413,19 @@ document.addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && state.editingText) {
     stopEditing();
+  }
+  // Undo/Redo keyboard shortcuts
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+    e.preventDefault();
+    if (e.shiftKey) {
+      redo();
+    } else {
+      undo();
+    }
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+    e.preventDefault();
+    redo();
   }
 });
 
@@ -572,12 +587,13 @@ function placeShape() {
   const item = state.shapeItems[state.shapeItems.length - 1];
   if (!item || item.isPlaced) return;
 
+  saveState();
   item.isPlaced = true;
   item.el.classList.add('placed');
-  
+
   // Draw the shape permanently on the canvas
   drawShapeOnCanvas(item);
-  
+
   // Keep the DOM element for dragging
   showToast('Shape placed! Use eraser to remove');
 }

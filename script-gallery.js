@@ -76,6 +76,7 @@ document.querySelectorAll('.export-format-btn').forEach(btn => {
 });
 
 function clearCanvas() {
+  saveState();
   dCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
   state.textItems.forEach(item => item.el.remove());
   state.textItems = [];
@@ -321,14 +322,16 @@ async function downloadItem(item, type) {
 
 async function loadArtwork(item) {
   showLoading('Loading artwork…');
-  
+
+  saveState();
+
   // Clear current canvas and items
   dCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
   state.textItems.forEach(t => t.el.remove());
   state.textItems = [];
   state.shapeItems.forEach(s => { if(s.el) s.el.remove(); });
   state.shapeItems = [];
-  
+
   // Load drawing canvas
   if (item.drawingData) {
     const img = new Image();
@@ -337,7 +340,7 @@ async function loadArtwork(item) {
     };
     img.src = item.drawingData;
   }
-  
+
   // Load text items
   if (item.textItemsData && item.textItemsData.length > 0) {
     item.textItemsData.forEach(data => {
@@ -350,7 +353,7 @@ async function loadArtwork(item) {
       el.dataset.id = data.id;
       el.contentEditable = 'false';
       textLayer.appendChild(el);
-      
+
       const textItem = {
         id: data.id,
         text: data.text,
@@ -360,7 +363,7 @@ async function loadArtwork(item) {
         el: el
       };
       state.textItems.push(textItem);
-      
+
       // Add mouse drag support
       el.addEventListener('mousedown', e => startMouseDrag(e, textItem));
       // Add double-click to edit
@@ -371,7 +374,7 @@ async function loadArtwork(item) {
       });
     });
   }
-  
+
   // Load shape items
   if (item.shapeItemsData && item.shapeItemsData.length > 0) {
     item.shapeItemsData.forEach(data => {
@@ -387,7 +390,7 @@ async function loadArtwork(item) {
       el.style.cursor = 'grab';
       el.dataset.id = data.id;
       textLayer.appendChild(el);
-      
+
       const item = {
         id: data.id,
         type: data.type,
@@ -403,7 +406,7 @@ async function loadArtwork(item) {
       drawShapeOnElement(el, item);
     });
   }
-  
+
   hideLoading();
   showScreen('main');
   showToast('Artwork loaded! Text is editable ✓');

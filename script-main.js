@@ -8,6 +8,7 @@ const state = {
   brushSize: 8,
   eraseRadius: 40,
   isDrawing: false,
+  isErasing: false,     // Track continuous erase action
   lastX: null, lastY: null,
   gesture: 'none',      // 'draw' | 'erase' | 'peace' | 'none'
   gestureHistory: [],
@@ -29,6 +30,9 @@ const state = {
   shapeDragId: null,
   shapeDragOffX: 0, shapeDragOffY: 0,
   shapeStartX: null, shapeStartY: null,
+  undoStack: [],        // History states for undo
+  redoStack: [],        // History states for redo
+  maxHistory: 50,       // Maximum history states
 };
 
 // DOM refs
@@ -66,6 +70,8 @@ const selectAllCheckbox = document.getElementById('selectAllCheckbox');
 const exportBtn = document.getElementById('exportBtn');
 const exportModal = document.getElementById('exportModal');
 const cancelExportBtn = document.getElementById('cancelExportBtn');
+const undoBtn = document.getElementById('undoBtn');
+const redoBtn = document.getElementById('redoBtn');
 
 const colorMap = { black:'#111111', pink:'#ff2d78', yellow:'#ffe94a', blue:'#2d8bff', green:'#2dff9a' };
 
@@ -181,11 +187,11 @@ function eraseAt(x, y) {
   // Also check if we're erasing over any placed shapes and remove them
   state.shapeItems = state.shapeItems.filter(item => {
     if (!item.isPlaced || !item.el) return true;
-    
+
     const cx = item.x + item.width / 2;
     const cy = item.y + item.height / 2;
     const d = Math.hypot(x - cx, y - cy);
-    
+
     // If eraser overlaps with shape, remove it
     if (d < Math.max(item.width, item.height) / 2 + r) {
       item.el.remove();
@@ -198,6 +204,10 @@ function eraseAt(x, y) {
 function draw(x, y, gesture) {
   if (state.mode === 'eraser') {
     // Eraser mode — always erase regardless of hand gesture
+    if (!state.isErasing) {
+      saveState();
+      state.isErasing = true;
+    }
     eraseAt(x, y);
     state.isDrawing = false;
     return;
@@ -207,6 +217,7 @@ function draw(x, y, gesture) {
     if (!state.isDrawing) {
       state.isDrawing = true;
       state.lastX = x; state.lastY = y;
+      saveState();
       return;
     }
     dCtx.globalCompositeOperation = 'source-over';
@@ -223,10 +234,226 @@ function draw(x, y, gesture) {
   } else if (gesture === 'erase') {
     // High-five gesture = erase
     state.isDrawing = false;
+    if (!state.isErasing) {
+      saveState();
+      state.isErasing = true;
+    }
     eraseAt(x, y);
 
   } else {
     state.isDrawing = false;
+    state.isErasing = false;
     state.lastX = null; state.lastY = null;
   }
 }
+
+// ═══════════════════════════════════════════════════════
+// UNDO/REDO SYSTEM
+// ═══════════════════════════════════════════════════════
+function saveState() {
+  // Save current canvas state and text/shape items
+  const canvasData = drawCanvas.toDataURL();
+  const textItemsState = state.textItems.map(item => ({
+    id: item.id,
+    text: item.text,
+    x: item.x,
+    y: item.y,
+    color: item.color
+  }));
+  const shapeItemsState = state.shapeItems.map(item => ({
+    id: item.id,
+    type: item.type,
+    x: item.x,
+    y: item.y,
+    width: item.width,
+    height: item.height,
+    color: item.color,
+    isPlaced: item.isPlaced,
+    startX: item.startX,
+    startY: item.startY,
+    endX: item.endX,
+    endY: item.endY
+  }));
+
+  const historyState = {
+    canvasData,
+    textItems: textItemsState,
+    shapeItems: shapeItemsState
+  };
+
+  state.undoStack.push(historyState);
+  if (state.undoStack.length > state.maxHistory) {
+    state.undoStack.shift();
+  }
+  // Clear redo stack when new action is performed
+  state.redoStack = [];
+  updateUndoRedoButtons();
+}
+
+function undo() {
+  if (state.undoStack.length === 0) return;
+
+  // Save current state to redo stack
+  const canvasData = drawCanvas.toDataURL();
+  const textItemsState = state.textItems.map(item => ({
+    id: item.id,
+    text: item.text,
+    x: item.x,
+    y: item.y,
+    color: item.color
+  }));
+  const shapeItemsState = state.shapeItems.map(item => ({
+    id: item.id,
+    type: item.type,
+    x: item.x,
+    y: item.y,
+    width: item.width,
+    height: item.height,
+    color: item.color,
+    isPlaced: item.isPlaced,
+    startX: item.startX,
+    startY: item.startY,
+    endX: item.endX,
+    endY: item.endY
+  }));
+
+  state.redoStack.push({
+    canvasData,
+    textItems: textItemsState,
+    shapeItems: shapeItemsState
+  });
+
+  // Restore previous state
+  const previousState = state.undoStack.pop();
+  restoreState(previousState);
+  updateUndoRedoButtons();
+  showToast('↶ Undone');
+}
+
+function redo() {
+  if (state.redoStack.length === 0) return;
+
+  // Save current state to undo stack
+  const canvasData = drawCanvas.toDataURL();
+  const textItemsState = state.textItems.map(item => ({
+    id: item.id,
+    text: item.text,
+    x: item.x,
+    y: item.y,
+    color: item.color
+  }));
+  const shapeItemsState = state.shapeItems.map(item => ({
+    id: item.id,
+    type: item.type,
+    x: item.x,
+    y: item.y,
+    width: item.width,
+    height: item.height,
+    color: item.color,
+    isPlaced: item.isPlaced,
+    startX: item.startX,
+    startY: item.startY,
+    endX: item.endX,
+    endY: item.endY
+  }));
+
+  state.undoStack.push({
+    canvasData,
+    textItems: textItemsState,
+    shapeItems: shapeItemsState
+  });
+
+  // Restore next state
+  const nextState = state.redoStack.pop();
+  restoreState(nextState);
+  updateUndoRedoButtons();
+  showToast('↷ Redone');
+}
+
+function restoreState(historyState) {
+  // Restore canvas
+  const img = new Image();
+  img.onload = () => {
+    dCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+    dCtx.drawImage(img, 0, 0);
+  };
+  img.src = historyState.canvasData;
+
+  // Restore text items
+  textLayer.innerHTML = '';
+  state.textItems = [];
+  historyState.textItems.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'text-item';
+    el.textContent = item.text;
+    el.style.left = item.x + 'px';
+    el.style.top = item.y + 'px';
+    el.style.color = item.color;
+    el.dataset.id = item.id;
+    el.contentEditable = 'false';
+    textLayer.appendChild(el);
+
+    const textItem = { id: item.id, text: item.text, x: item.x, y: item.y, color: item.color, el };
+    state.textItems.push(textItem);
+
+    // Re-attach event listeners
+    el.addEventListener('mousedown', e => startMouseDrag(e, textItem));
+    el.addEventListener('dblclick', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      startEditing(textItem);
+    });
+  });
+
+  // Restore shape items
+  state.shapeItems = [];
+  historyState.shapeItems.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'shape-item';
+    el.style.position = 'absolute';
+    el.style.left = item.x + 'px';
+    el.style.top = item.y + 'px';
+    el.style.width = item.width + 'px';
+    el.style.height = item.height + 'px';
+    el.style.border = `3px solid ${item.color}`;
+    el.style.pointerEvents = 'all';
+    el.style.cursor = 'grab';
+    el.dataset.id = item.id;
+    if (item.isPlaced) el.classList.add('placed');
+    textLayer.appendChild(el);
+
+    const shapeItem = {
+      id: item.id,
+      type: item.type,
+      x: item.x,
+      y: item.y,
+      width: item.width,
+      height: item.height,
+      color: item.color,
+      el,
+      isPlaced: item.isPlaced,
+      startX: item.startX,
+      startY: item.startY,
+      endX: item.endX,
+      endY: item.endY
+    };
+    state.shapeItems.push(shapeItem);
+
+    drawShapeOnElement(el, shapeItem);
+    if (item.isPlaced) {
+      drawShapeOnCanvas(shapeItem);
+    }
+  });
+}
+
+function updateUndoRedoButtons() {
+  undoBtn.style.opacity = state.undoStack.length > 0 ? '1' : '0.3';
+  undoBtn.style.pointerEvents = state.undoStack.length > 0 ? 'auto' : 'none';
+  redoBtn.style.opacity = state.redoStack.length > 0 ? '1' : '0.3';
+  redoBtn.style.pointerEvents = state.redoStack.length > 0 ? 'auto' : 'none';
+}
+
+// Initialize undo/redo buttons
+undoBtn.addEventListener('click', undo);
+redoBtn.addEventListener('click', redo);
+updateUndoRedoButtons();
