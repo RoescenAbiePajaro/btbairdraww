@@ -1034,4 +1034,24 @@ resizeCanvases();
 startBtn.addEventListener('click', async () => {
   showScreen('main');
   await initHandTracking();
+  // Show gesture hint modal after camera is initialized
+  const gestureHintModal = document.getElementById('gestureHintModal');
+  if (gestureHintModal) {
+    gestureHintModal.style.display = 'flex';
+  }
+});
+
+// Close gesture hint modal
+document.getElementById('closeGestureHintBtn').addEventListener('click', () => {
+  const gestureHintModal = document.getElementById('gestureHintModal');
+  if (gestureHintModal) {
+    gestureHintModal.style.display = 'none';
+  }
+});
+
+// Close modal when clicking outside
+document.getElementById('gestureHintModal').addEventListener('click', (e) => {
+  if (e.target.id === 'gestureHintModal') {
+    e.target.style.display = 'none';
+  }
 });

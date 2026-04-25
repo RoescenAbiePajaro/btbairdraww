@@ -183,9 +183,15 @@ function onHandResults(results) {
 }
 
 function drawHandSkeleton(lm, gesture, w, h, isErasing, palmX, palmY, r) {
-  const color = isErasing ? 'rgba(200,180,255,0.75)'
-              : gesture === 'draw' ? 'rgba(147,51,234,0.75)'
-              : 'rgba(128,0,128,0.5)';
+  // Blinking effect using sine wave
+  const blink = (Math.sin(Date.now() / 200) + 1) / 2; // Oscillates between 0 and 1
+  const opacity = 0.3 + (blink * 0.5); // Oscillates between 0.3 and 0.8
+  
+  const baseColor = isErasing ? [200,180,255]
+                  : gesture === 'draw' ? [147,51,234]
+                  : [128,0,128];
+  const color = `rgba(${baseColor[0]},${baseColor[1]},${baseColor[2]},${opacity})`;
+  
   const connections = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[0,9],[9,10],[10,11],[11,12],[0,13],[13,14],[14,15],[15,16],[0,17],[17,18],[18,19],[19,20]];
   hCtx.strokeStyle = color;
   hCtx.lineWidth = 2;

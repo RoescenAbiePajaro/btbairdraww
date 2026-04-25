@@ -28,10 +28,7 @@
 
   <button class="splash-btn" id="startBtn">✦ Open Camera</button>
   <div class="splash-hint">
-    ☝️ Index finger to draw and resizing shapes<br>
-    ✌️ Peace sign to place shapes<br>
-    ✋ High-five (open hand) to erase /<br>
-    drag text and drag shapes
+    Welcome to Beyond The Brush! <br>Tap the button above to get started.
   </div>
 </div>
 
@@ -156,26 +153,40 @@
   </div>
 </div>
 
+<!-- ─── GESTURE HINT MODAL ─── -->
+<div id="gestureHintModal" style="position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);z-index:9999;display:none;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px;max-width:400px;width:90%">
+    <h3 style="font-family:'Segoe UI',sans-serif;font-size:1.5rem;margin-bottom:24px;color:var(--text)">Gesture Guide</h3>
+    <div class="splash-hint" style="font-size:.8rem;line-height:2">
+      ☝️ Index finger to draw and resizing shapes<br>
+      ✌️ Peace sign to place shapes<br>
+      ✋ High-five (open hand) to erase /<br>
+      drag text and drag shapes
+    </div>
+    <button id="closeGestureHintBtn" style="margin-top:24px;width:100%;background:#9333ea;border:none;border-radius:10px;padding:12px;color:#fff;font-family:'Space Mono',monospace;font-size:.8rem;cursor:pointer;transition:all .15s">Got it!</button>
+  </div>
+</div>
+
 <!-- ─── EXPORT MODAL ─── -->
 <div id="exportModal" style="position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);z-index:9999;display:none;align-items:center;justify-content:center">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px;max-width:400px;width:90%">
     <h3 style="font-family:'Segoe UI',sans-serif;font-size:1.5rem;margin-bottom:24px;color:var(--text)">Export Format</h3>
     <div style="display:flex;flex-direction:column;gap:12px">
-      <button class="export-format-btn" data-format="pdf" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;color:var(--text);font-family:'Space Mono',monospace;font-size:.85rem;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px">
+      <button class="export-format-btn" data-format="pdf" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;color:var(--text);font-family:'Segoe UI',sans-serif;font-size:.85rem;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px">
         <span style="font-size:1.5rem">📄</span>
         <div style="text-align:left">
           <div style="font-weight:700">PDF with Text</div>
           <div style="font-size:.65rem;color:var(--muted)">Extract text as typable content with image preview</div>
         </div>
       </button>
-      <button class="export-format-btn" data-format="pptx" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;color:var(--text);font-family:'Space Mono',monospace;font-size:.85rem;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px">
+      <button class="export-format-btn" data-format="pptx" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;color:var(--text);font-family:'Segoe UI',sans-serif;font-size:.85rem;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px">
         <span style="font-size:1.5rem">📊</span>
         <div style="text-align:left">
           <div style="font-weight:700">PowerPoint</div>
           <div style="font-size:.65rem;color:var(--muted)">Export as PPTX slideshow</div>
         </div>
       </button>
-      <button class="export-format-btn" data-format="zip" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;color:var(--text);font-family:'Space Mono',monospace;font-size:.85rem;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px">
+      <button class="export-format-btn" data-format="zip" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;color:var(--text);font-family:'Segoe UI',sans-serif;font-size:.85rem;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px">
         <span style="font-size:1.5rem">📦</span>
         <div style="text-align:left">
           <div style="font-weight:700">ZIP Archive</div>
@@ -183,7 +194,7 @@
         </div>
       </button>
     </div>
-    <button id="cancelExportBtn" style="margin-top:20px;width:100%;background:transparent;border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--muted);font-family:'Space Mono',monospace;font-size:.75rem;cursor:pointer;transition:all .15s">Cancel</button>
+    <button id="cancelExportBtn" style="margin-top:20px;width:100%;background:#ee4444;border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-family:'Segoe UI',sans-serif;font-size:.75rem;cursor:pointer;transition:all .15s">Cancel</button>
   </div>
 </div>
 
