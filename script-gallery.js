@@ -218,8 +218,6 @@ function renderGallery() {
       <div class="gallery-actions">
         <button class="load-btn" data-id="${item.id}">📂Load</button>
         <button class="dl-btn" data-id="${item.id}" data-type="png">PNG</button>
-        <button class="dl-btn pdf" data-id="${item.id}" data-type="pdf">PDF+Text</button>
-        <button class="dl-btn pptx" data-id="${item.id}" data-type="pptx">⬇ PPTX</button>
       </div>
     `;
     galleryGrid.appendChild(card);
