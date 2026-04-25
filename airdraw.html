@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AirDraw">
+<link rel="manifest" href="manifest.json">
+<title>AirDraw — Beyond The Brush</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+
+<!-- ─── SPLASH ─── -->
+<div class="screen" id="splash">
+  <div class="splash-logo">Air<span>Draw</span></div>
+  <div class="splash-sub">Beyond the Brush</div>
+  <button class="splash-btn" id="startBtn">✦ Open Camera</button>
+  <div class="splash-hint">
+    ☞ Index finger to draw<br>
+    ✋ High-five (open hand) to erase / drag text
+  </div>
+</div>
+
+<!-- ─── MAIN DRAW SCREEN ─── -->
+<div class="screen hidden" id="main">
+  <video id="videoEl" playsinline autoplay muted></video>
+  <canvas id="templateCanvas"></canvas>
+  <canvas id="drawCanvas"></canvas>
+  <canvas id="handCanvas"></canvas>
+
+  <div id="cursorDot"></div>
+  <div id="eraserRing"></div>
+  <div id="eraseFlash"></div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <span id="handStatus" class="status">⬤ READY</span>
+    <span>|</span>
+    <span id="modeLabel" class="mode-label">DRAW</span>
+    <span>|</span>
+    <span id="gestureLabel" style="color:var(--muted)">—</span>
+  </div>
+
+  <!-- Top Right Buttons -->
+  <div id="topRight">
+    <button class="icon-btn" id="galleryBtn" title="Gallery">🖼</button>
+    <button class="icon-btn" id="clearBtn" title="Clear canvas">🗑</button>
+    <button class="icon-btn" id="saveBtn" title="Save to gallery">💾</button>
+  </div>
+
+  <!-- Gesture Hint -->
+  <div id="gestureHint"></div>
+
+  <!-- Text Controls -->
+  <div id="textControls" id="textControls">
+    <div style="font-size:.65rem;color:var(--muted);letter-spacing:2px">TEXT MODE</div>
+    <input id="textInput" type="text" placeholder="Type your text…" maxlength="50">
+    <div id="textColorRow">
+      <div class="tc-color active" style="background:#ffffff" data-color="#ffffff"></div>
+      <div class="tc-color" style="background:#ff2d78" data-color="#ff2d78"></div>
+      <div class="tc-color" style="background:#ffe94a" data-color="#ffe94a"></div>
+      <div class="tc-color" style="background:#2d8bff" data-color="#2d8bff"></div>
+      <div class="tc-color" style="background:#2dff9a" data-color="#2dff9a"></div>
+    </div>
+    <button class="add-text-btn" id="addTextBtn">+ Add Text</button>
+  </div>
+
+  <!-- Shape Controls -->
+  <div id="shapeControls">
+    <div style="font-size:.65rem;color:var(--muted);letter-spacing:2px">SHAPE MODE</div>
+    <div id="shapeRow" style="display:flex;gap:8px;margin-top:8px">
+      <button class="shape-btn active" data-shape="square" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.1);color:var(--text);font-size:.7rem;cursor:pointer">□ Square</button>
+      <button class="shape-btn" data-shape="rectangle" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.1);color:var(--text);font-size:.7rem;cursor:pointer">▭ Rect</button>
+      <button class="shape-btn" data-shape="triangle" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.1);color:var(--text);font-size:.7rem;cursor:pointer">△ Tri</button>
+      <button class="shape-btn" data-shape="circle" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,0.1);color:var(--text);font-size:.7rem;cursor:pointer">○ Circle</button>
+    </div>
+    <div style="margin-top:10px;font-size:.6rem;color:var(--muted);text-align:center">☝ Index to start, drag to size<br>✌ Peace sign to place</div>
+  </div>
+
+  <!-- Done Editing Button -->
+  <button id="doneEditingBtn">✓ Done Editing</button>
+
+  <!-- Brush Info -->
+  <div id="brushInfo"><span id="sizeLabel">SIZE</span>: <span id="sizeDisplay">8</span>px</div>
+
+  <!-- Toolbar -->
+  <div id="toolbar">
+    <!-- Colors -->
+    <div class="color-btn active" style="background:#111111" data-color="black" title="Black"></div>
+    <div class="color-btn" style="background:#ff2d78" data-color="pink" title="Pink"></div>
+    <div class="color-btn" style="background:#ffe94a" data-color="yellow" title="Yellow"></div>
+    <div class="color-btn" style="background:#2d8bff" data-color="blue" title="Blue"></div>
+    <div class="color-btn" style="background:#2dff9a" data-color="green" title="Green"></div>
+    <div class="tool-sep"></div>
+    <!-- Size -->
+    <button class="size-btn" id="sizeDown">−</button>
+    <button class="size-btn" id="sizeUp">+</button>
+    <div class="tool-sep"></div>
+    <!-- Modes -->
+    <button class="tool-btn active" id="drawModeBtn">✏ DRAW</button>
+    <button class="tool-btn" id="textModeBtn">T TEXT</button>
+    <button class="tool-btn" id="shapeModeBtn">◇ SHAPE</button>
+    <button class="tool-btn" id="eraserBtn" style="color:var(--yellow)">◎ ERASE</button>
+  </div>
+</div>
+
+<!-- ─── GALLERY ─── -->
+<div class="screen hidden" id="gallery">
+  <div class="gallery-header">
+    <div class="gallery-title">Gallery</div>
+    <div class="gallery-controls">
+      <div class="select-all-wrapper">
+        <input type="checkbox" class="select-all-checkbox" id="selectAllCheckbox">
+        <span style="font-size:.7rem;color:var(--muted)">Select All</span>
+      </div>
+      <button class="export-btn" id="exportBtn">📤 Export Selected</button>
+      <button class="back-btn" id="backBtn">← Back</button>
+    </div>
+  </div>
+  <div class="gallery-grid" id="galleryGrid">
+    <div class="gallery-empty">No artwork saved yet.<br>Draw something and hit 💾</div>
+  </div>
+</div>
+
+<!-- ─── EXPORT MODAL ─── -->
+<div id="exportModal" style="position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);z-index:9999;display:none;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px;max-width:400px;width:90%">
+    <h3 style="font-family:'Playfair Display',serif;font-size:1.5rem;font-style:italic;margin-bottom:24px;color:var(--text)">Export Format</h3>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <button class="export-format-btn" data-format="pdf" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;color:var(--text);font-family:'Space Mono',monospace;font-size:.85rem;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px">
+        <span style="font-size:1.5rem">📄</span>
+        <div style="text-align:left">
+          <div style="font-weight:700">PDF with Text</div>
+          <div style="font-size:.65rem;color:var(--muted)">Extract text as typable content with image preview</div>
+        </div>
+      </button>
+      <button class="export-format-btn" data-format="pptx" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;color:var(--text);font-family:'Space Mono',monospace;font-size:.85rem;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px">
+        <span style="font-size:1.5rem">📊</span>
+        <div style="text-align:left">
+          <div style="font-weight:700">PowerPoint</div>
+          <div style="font-size:.65rem;color:var(--muted)">Export as PPTX slideshow</div>
+        </div>
+      </button>
+      <button class="export-format-btn" data-format="zip" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;color:var(--text);font-family:'Space Mono',monospace;font-size:.85rem;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:12px">
+        <span style="font-size:1.5rem">📦</span>
+        <div style="text-align:left">
+          <div style="font-weight:700">ZIP Archive</div>
+          <div style="font-size:.65rem;color:var(--muted)">Download all images as ZIP</div>
+        </div>
+      </button>
+    </div>
+    <button id="cancelExportBtn" style="margin-top:20px;width:100%;background:transparent;border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--muted);font-family:'Space Mono',monospace;font-size:.75rem;cursor:pointer;transition:all .15s">Cancel</button>
+  </div>
+</div>
+
+<!-- ─── LOADING ─── -->
+<div id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">Initializing hand tracking…</div>
+</div>
+
+<!-- ─── TOAST ─── -->
+<div id="toast"></div>
+<div id="saveFlash"></div>
+
+<!-- ─── TEXT LAYER ─── -->
+<div id="textLayer"></div>
+
+<script src="script-auth.js"></script>
+<script src="script-main.js"></script>
+<script src="script-handling.js"></script>
+<script src="script-gallery.js"></script>
+</body>
+</html>

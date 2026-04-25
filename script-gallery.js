@@ -124,16 +124,41 @@ async function saveArtwork() {
     isPlaced: item.isPlaced
   }));
   
-  state.gallery.unshift({ 
-    dataURL, 
-    timestamp: ts, 
-    id: Date.now(),
-    drawingData,
-    textItemsData,
-    shapeItemsData
-  });
-  renderGallery();
-  showToast('Saved to gallery! 🎨');
+  try {
+    // Save to server
+    const savedArtwork = await saveArtworkToServer({
+      dataURL,
+      timestamp: ts,
+      drawingData,
+      textItemsData,
+      shapeItemsData
+    });
+    
+    // Add to local state
+    state.gallery.unshift({ 
+      dataURL, 
+      timestamp: ts, 
+      id: savedArtwork.id,
+      drawingData,
+      textItemsData,
+      shapeItemsData
+    });
+    
+    renderGallery();
+  } catch (error) {
+    console.error('Failed to save artwork:', error);
+    // Fallback to local storage if server fails
+    state.gallery.unshift({ 
+      dataURL, 
+      timestamp: ts, 
+      id: Date.now(),
+      drawingData,
+      textItemsData,
+      shapeItemsData
+    });
+    renderGallery();
+    showToast('Saved locally (server unavailable) 🎨');
+  }
 }
 
 function renderGallery() {
