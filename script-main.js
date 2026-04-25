@@ -22,6 +22,7 @@ const state = {
   textDragActive: false,
   textDragId: null,
   textDragOffX: 0, textDragOffY: 0,
+  textDragHoldTime: null, // Track when text was first grabbed for deletion
   editingText: null,    // Currently editing text item
   shapeItems: [],       // {id, type, x, y, width, height, color, el, isPlaced}[]
   selectedShape: null,
@@ -73,7 +74,7 @@ const cancelExportBtn = document.getElementById('cancelExportBtn');
 const undoBtn = document.getElementById('undoBtn');
 const redoBtn = document.getElementById('redoBtn');
 
-const colorMap = { black:'#111111', pink:'#ff2d78', yellow:'#ffe94a', blue:'#2d8bff', green:'#2dff9a' };
+const colorMap = { black:'#111111', pink:'#d52393', yellow:'#fef53d', blue:'#2d8bff', green:'#36fd26' };
 
 // Template image for export
 let templateImg = new Image();

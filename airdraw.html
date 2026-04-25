@@ -70,10 +70,10 @@
     <input id="textInput" type="text" placeholder="Type your text…" maxlength="50">
     <div id="textColorRow">
       <div class="tc-color active" style="background:#ffffff" data-color="#ffffff"></div>
-      <div class="tc-color" style="background:#ff2d78" data-color="#ff2d78"></div>
-      <div class="tc-color" style="background:#ffe94a" data-color="#ffe94a"></div>
-      <div class="tc-color" style="background:#2d8bff" data-color="#2d8bff"></div>
-      <div class="tc-color" style="background:#2dff9a" data-color="#2dff9a"></div>
+      <div class="tc-color" style="background:#d52393" data-color="#d52393"></div>
+      <div class="tc-color" style="background:#fef53d" data-color="#fef53d"></div>
+      <div class="tc-color" style="background:#1261e5" data-color="#1261e5"></div>
+      <div class="tc-color" style="background:#36fd26" data-color="#36fd26"></div>
     </div>
     <button class="add-text-btn" id="addTextBtn">+ Add Text</button>
   </div>
@@ -93,17 +93,14 @@
   <!-- Done Editing Button -->
   <button id="doneEditingBtn">✓ Done Editing</button>
 
-  <!-- Brush Info -->
-  <div id="brushInfo"><span id="sizeLabel">SIZE</span>: <span id="sizeDisplay">8</span>px</div>
-
   <!-- Toolbar -->
   <div id="toolbar">
     <!-- Colors -->
     <div class="color-btn active" style="background:#111111" data-color="black" title="Black"></div>
-    <div class="color-btn" style="background:#ff2d78" data-color="pink" title="Pink"></div>
-    <div class="color-btn" style="background:#ffe94a" data-color="yellow" title="Yellow"></div>
+    <div class="color-btn" style="background:#d52393" data-color="pink" title="Pink"></div>
+    <div class="color-btn" style="background:#fef53d" data-color="yellow" title="Yellow"></div>
     <div class="color-btn" style="background:#2d8bff" data-color="blue" title="Blue"></div>
-    <div class="color-btn" style="background:#2dff9a" data-color="green" title="Green"></div>
+    <div class="color-btn" style="background:#36fd26" data-color="green" title="Green"></div>
     <div class="tool-sep"></div>
     <!-- Size -->
     <button class="size-btn" id="sizeDown">−</button>
@@ -127,6 +124,7 @@
         <span style="font-size:.7rem;color:var(--muted)">Select All</span>
       </div>
       <button class="delete-btn" id="deleteBtn" style="display:none;">🗑️ Delete Selected</button>
+      <button class="add-text-btn" id="addTextBtn">+ Add Text</button>
       <button class="export-btn" id="exportBtn">📤 Export Selected</button>
       <button class="back-btn" id="backBtn">← Back</button>
     </div>

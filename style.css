@@ -1069,11 +1069,11 @@ video {
   --border: rgba(255,255,255,0.08);
   --text: #f0f0ff;
   --muted: #6b6b8a;
-  --accent: #ff2d78;
-  --pink: #ff2d78;
-  --yellow: #ffe94a;
+  --accent: #d52393;
+  --pink: #d52393;
+  --yellow: #fef53d;
   --blue: #2d8bff;
-  --green: #2dff9a;
+  --green: #36fd26;
   --black: #111111;
   --white: #ffffff;
   --radius: 16px;

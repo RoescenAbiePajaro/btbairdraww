@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════
 function handleTextDrag(x, y, gesture) {
   if (gesture === 'erase') {
-    // High five = pick up nearest text
+    // High five = pick up nearest text or delete if holding
     if (!state.textDragActive) {
       let closest = null, minDist = 80;
       state.textItems.forEach(item => {
@@ -15,13 +15,27 @@ function handleTextDrag(x, y, gesture) {
         if (d < minDist) { minDist = d; closest = item; }
       });
       if (closest) {
-        state.textDragActive = true;
-        state.textDragId = closest.id;
-        const rect = closest.el.getBoundingClientRect();
-        state.textDragOffX = x - rect.left;
-        state.textDragOffY = y - rect.top;
-        closest.el.classList.add('selected');
-        showHint('✋ Dragging text — open hand to move');
+        // Check if we're already holding this text (delete after 1 second)
+        if (state.textDragId === closest.id && state.textDragHoldTime) {
+          const holdDuration = Date.now() - state.textDragHoldTime;
+          if (holdDuration > 1000) {
+            deleteText(closest);
+            state.textDragActive = false;
+            state.textDragId = null;
+            state.textDragHoldTime = null;
+            return;
+          }
+        } else {
+          // Start dragging/holding
+          state.textDragActive = true;
+          state.textDragId = closest.id;
+          state.textDragHoldTime = Date.now();
+          const rect = closest.el.getBoundingClientRect();
+          state.textDragOffX = x - rect.left;
+          state.textDragOffY = y - rect.top;
+          closest.el.classList.add('selected');
+          showHint('✋ Dragging text — hold 1s to delete');
+        }
       }
     } else {
       // Move the text
@@ -42,7 +56,15 @@ function handleTextDrag(x, y, gesture) {
     }
     state.textDragActive = false;
     state.textDragId = null;
+    state.textDragHoldTime = null;
   }
+}
+
+function deleteText(item) {
+  saveState();
+  item.el.remove();
+  state.textItems = state.textItems.filter(t => t.id !== item.id);
+  showToast('Text deleted!');
 }
 
 // ═══════════════════════════════════════════════════════
