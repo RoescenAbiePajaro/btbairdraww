@@ -34,7 +34,6 @@ function handleTextDrag(x, y, gesture) {
           state.textDragOffX = x - rect.left;
           state.textDragOffY = y - rect.top;
           closest.el.classList.add('selected');
-          showHint('✋ Dragging text — hold 1s to delete');
         }
       }
     } else {
@@ -494,7 +493,6 @@ function handleShapeDrag(x, y, gesture) {
         closest.el.classList.add('selected');
         // Clear the shape from canvas once when drag starts
         clearShapeFromCanvas(closest);
-        showHint('✋ Dragging shape — open hand to move');
       }
     } else {
       // Move the shape
