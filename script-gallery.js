@@ -77,7 +77,8 @@ document.querySelectorAll('.export-format-btn').forEach(btn => {
 
 function clearCanvas() {
   saveState();
-  dCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+  dCtx.fillStyle = '#ffffff';
+  dCtx.fillRect(0, 0, drawCanvas.width, drawCanvas.height);
   state.textItems.forEach(item => item.el.remove());
   state.textItems = [];
   state.shapeItems.forEach(item => { if(item.el) item.el.remove(); });
@@ -326,7 +327,8 @@ async function loadArtwork(item) {
   saveState();
 
   // Clear current canvas and items
-  dCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+  dCtx.fillStyle = '#ffffff';
+  dCtx.fillRect(0, 0, drawCanvas.width, drawCanvas.height);
   state.textItems.forEach(t => t.el.remove());
   state.textItems = [];
   state.shapeItems.forEach(s => { if(s.el) s.el.remove(); });

@@ -85,6 +85,11 @@ templateImg.src = 'Beyond The Brush Template.png';
 function resizeCanvases() {
   const w = window.innerWidth, h = window.innerHeight;
   [drawCanvas, handCanvas, templateCanvas].forEach(c => { c.width=w; c.height=h; });
+  
+  // Set white background for draw canvas
+  dCtx.fillStyle = '#ffffff';
+  dCtx.fillRect(0, 0, w, h);
+  
   drawTemplate();
 }
 window.addEventListener('resize', resizeCanvases);
@@ -374,7 +379,8 @@ function restoreState(historyState) {
   // Restore canvas
   const img = new Image();
   img.onload = () => {
-    dCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+    dCtx.fillStyle = '#ffffff';
+    dCtx.fillRect(0, 0, drawCanvas.width, drawCanvas.height);
     dCtx.drawImage(img, 0, 0);
   };
   img.src = historyState.canvasData;
