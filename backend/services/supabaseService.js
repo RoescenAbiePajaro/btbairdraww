@@ -310,13 +310,20 @@ class SupabaseService {
   // Gallery database operations using Supabase
   async saveToGallery(userId, dataURL, timestamp, drawingData, textItemsData, shapeItemsData) {
     try {
-      // Upload image to Supabase Storage first
-      console.log('Uploading image to storage...');
-      const storageResult = await this.uploadImageToStorage(dataURL, userId);
-      
-      // Save to database with storage URL
-      console.log('Saving to database with storage URL...');
-      return await this.saveToGalleryREST(userId, storageResult.publicUrl, timestamp, drawingData, textItemsData, shapeItemsData);
+      // Try to upload image to Supabase Storage first
+      console.log('Attempting to upload image to storage...');
+      try {
+        const storageResult = await this.uploadImageToStorage(dataURL, userId);
+        
+        // Save to database with storage URL
+        console.log('Saving to database with storage URL...');
+        return await this.saveToGalleryREST(userId, storageResult.publicUrl, timestamp, drawingData, textItemsData, shapeItemsData);
+      } catch (storageError) {
+        console.warn('Storage upload failed, falling back to base64:', storageError.message);
+        console.log('Saving to database with base64 dataURL...');
+        // Fallback: save base64 directly to database
+        return await this.saveToGalleryREST(userId, dataURL, timestamp, drawingData, textItemsData, shapeItemsData);
+      }
     } catch (error) {
       console.error('Error saving to gallery:', error);
       throw error;

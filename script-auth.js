@@ -109,17 +109,20 @@ async function loadUserGallery() {
     
     if (response.ok) {
       const galleryData = await response.json();
+      console.log('Raw gallery data from server:', galleryData);
+      
       // Convert server data to client format
       state.gallery = galleryData.map(item => ({
-        dataURL: item.dataURL, // Now stores Supabase Storage public URL
+        dataURL: item.dataURL || item.dataurl, // Handle both cases
         timestamp: item.timestamp,
         id: parseInt(item.id),
-        drawingData: item.drawingData, // Still base64 for canvas loading
-        textItemsData: item.textItemsData || [],
-        shapeItemsData: item.shapeItemsData || []
+        drawingData: item.drawingData || item.drawingdata, // Handle both cases
+        textItemsData: item.textItemsData || item.textitemsdata || [],
+        shapeItemsData: item.shapeItemsData || item.shapeitemsdata || []
       }));
       
       console.log('Gallery loaded from server:', state.gallery.length, 'items');
+      console.log('Processed gallery items:', state.gallery);
       renderGallery();
     } else {
       console.error('Failed to load gallery');

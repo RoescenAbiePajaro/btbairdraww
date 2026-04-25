@@ -197,16 +197,23 @@ function renderGallery() {
   }
   galleryGrid.innerHTML = '';
   state.gallery.forEach(item => {
+    // Skip items without dataURL
+    if (!item.dataURL) {
+      console.warn('Skipping gallery item without dataURL:', item);
+      return;
+    }
+    
     const card = document.createElement('div');
     card.className = 'gallery-card';
     card.dataset.id = item.id;
     if (state.selectedGalleryItems.has(item.id)) {
       card.classList.add('selected');
     }
-    // item.dataURL now contains Supabase Storage public URL
+    // item.dataURL now contains Supabase Storage public URL or base64
     card.innerHTML = `
       <input type="checkbox" class="card-checkbox" data-id="${item.id}" ${state.selectedGalleryItems.has(item.id) ? 'checked' : ''}>
-      <img class="gallery-thumb" src="${item.dataURL}" alt="Artwork" data-id="${item.id}">
+      <img class="gallery-thumb" src="${item.dataURL}" alt="Artwork" data-id="${item.id}" onerror="this.style.display='none';this.parentElement.querySelector('.error-placeholder').style.display='block';">
+      <div class="error-placeholder" style="display:none;padding:20px;text-align:center;color:var(--muted);font-size:0.7rem;">Image unavailable</div>
       <div class="gallery-actions">
         <button class="load-btn" data-id="${item.id}">📂 Load</button>
         <button class="dl-btn" data-id="${item.id}" data-type="png">⬇ PNG</button>
