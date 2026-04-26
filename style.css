@@ -1206,6 +1206,12 @@ body {
 .text-item.selected { outline: 2px dashed var(--yellow); outline-offset:4px; }
 .text-item.editing { outline: 2px solid #9333ea; outline-offset:4px; background: rgba(10,10,15,.8); padding: 4px 8px; border-radius: 8px; }
 .text-item.editing:focus { outline: 2px solid #9333ea; }
+.text-item.selected-for-delete { outline: 2px solid #ee4444; outline-offset:4px; background: rgba(238,68,68,.2); padding: 4px 8px; border-radius: 8px; animation: pulse-red 1s infinite; }
+
+@keyframes pulse-red {
+  0%, 100% { background: rgba(238,68,68,.2); }
+  50% { background: rgba(238,68,68,.4); }
+}
 
 /* ─── SHAPE ITEMS ─── */
 .shape-item {

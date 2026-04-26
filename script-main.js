@@ -24,6 +24,7 @@ const state = {
   textDragOffX: 0, textDragOffY: 0,
   textDragHoldTime: null, // Track when text was first grabbed for deletion
   editingText: null,    // Currently editing text item
+  selectedTextForDelete: null, // Text item selected for deletion via double-click
   shapeItems: [],       // {id, type, x, y, width, height, color, el, isPlaced}[]
   selectedShape: null,
   currentShape: 'square', // 'square' | 'rectangle' | 'triangle'
@@ -64,6 +65,7 @@ const galleryGrid   = document.getElementById('galleryGrid');
 const textControls  = document.getElementById('textControls');
 const textInput     = document.getElementById('textInput');
 const textLayer     = document.getElementById('textLayer');
+const deleteTextBtn = document.getElementById('deleteTextBtn');
 const brushInfo     = document.getElementById('brushInfo');
 const doneEditingBtn = document.getElementById('doneEditingBtn');
 const shapeControls = document.getElementById('shapeControls');
@@ -402,6 +404,16 @@ function restoreState(historyState) {
     el.addEventListener('dblclick', e => {
       e.preventDefault();
       e.stopPropagation();
+      
+      // Clear previous selection
+      if (state.selectedTextForDelete && state.selectedTextForDelete !== textItem) {
+        state.selectedTextForDelete.el.classList.remove('selected-for-delete');
+      }
+      
+      // Select for deletion and show delete button, then start editing
+      state.selectedTextForDelete = textItem;
+      textItem.el.classList.add('selected-for-delete');
+      showDeleteButton();
       startEditing(textItem);
     });
   });

@@ -347,10 +347,20 @@ function addText() {
 
   // Mouse drag support too
   el.addEventListener('mousedown', e => startMouseDrag(e, item));
-  // Double-click to edit
+  // Double-click to edit and show delete button
   el.addEventListener('dblclick', e => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Clear previous selection
+    if (state.selectedTextForDelete && state.selectedTextForDelete !== item) {
+      state.selectedTextForDelete.el.classList.remove('selected-for-delete');
+    }
+    
+    // Select for deletion and show delete button, then start editing
+    state.selectedTextForDelete = item;
+    item.el.classList.add('selected-for-delete');
+    showDeleteButton();
     startEditing(item);
   });
 
@@ -736,3 +746,43 @@ function clearShapeFromCanvas(item) {
     dCtx.restore();
   }
 }
+
+// ═══════════════════════════════════════════════════════
+// DELETE TEXT FUNCTIONALITY
+// ═══════════════════════════════════════════════════════
+function showDeleteButton() {
+  deleteTextBtn.style.display = 'block';
+}
+
+function hideDeleteButton() {
+  deleteTextBtn.style.display = 'none';
+  if (state.selectedTextForDelete) {
+    state.selectedTextForDelete.el.classList.remove('selected-for-delete');
+    state.selectedTextForDelete = null;
+  }
+}
+
+// Delete button click handler
+deleteTextBtn.addEventListener('click', () => {
+  if (state.selectedTextForDelete) {
+    deleteText(state.selectedTextForDelete);
+    hideDeleteButton();
+  }
+});
+
+// Click outside to hide delete button
+document.addEventListener('click', (e) => {
+  if (state.selectedTextForDelete && 
+      !state.selectedTextForDelete.el.contains(e.target) && 
+      e.target !== deleteTextBtn &&
+      !textControls.contains(e.target)) {
+    hideDeleteButton();
+  }
+});
+
+// Escape key to hide delete button
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && state.selectedTextForDelete) {
+    hideDeleteButton();
+  }
+});
