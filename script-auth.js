@@ -105,7 +105,7 @@ async function authenticatedFetch(url, options = {}) {
 // Load user's gallery from server
 async function loadUserGallery() {
   try {
-    const response = await authenticatedFetch('http://localhost:5000/api/gallery');
+    const response = await authenticatedFetch('https://btbairdraww.onrender.com/api/gallery');
     
     if (response.ok) {
       const galleryData = await response.json();
@@ -137,7 +137,7 @@ async function loadUserGallery() {
 // Save artwork to user's gallery
 async function saveArtworkToServer(artworkData) {
   try {
-    const response = await authenticatedFetch('http://localhost:5000/api/gallery', {
+    const response = await authenticatedFetch('https://btbairdraww.onrender.com/api/gallery', {
       method: 'POST',
       body: JSON.stringify(artworkData)
     });
@@ -160,7 +160,7 @@ async function saveArtworkToServer(artworkData) {
 // Delete artwork from user's gallery
 async function deleteArtworkFromServer(artworkId) {
   try {
-    const response = await authenticatedFetch(`http://localhost:5000/api/gallery/${artworkId}`, {
+    const response = await authenticatedFetch(`https://btbairdraww.onrender.com/api/gallery/${artworkId}`, {
       method: 'DELETE'
     });
     
