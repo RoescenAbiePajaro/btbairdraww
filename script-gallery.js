@@ -49,6 +49,12 @@ deleteBtn.addEventListener('click', async () => {
       state.gallery = state.gallery.filter(item => !state.selectedGalleryItems.has(item.id));
       state.selectedGalleryItems.clear();
       
+      // Reset to page 1 if current page is now empty
+      const totalPages = Math.ceil(state.gallery.length / state.galleryItemsPerPage);
+      if (state.galleryCurrentPage > totalPages && totalPages > 0) {
+        state.galleryCurrentPage = 1;
+      }
+      
       renderGallery();
       hideLoading();
       showToast(`Deleted ${selectedItems.length} artwork${selectedItems.length > 1 ? 's' : ''}`);
@@ -73,6 +79,22 @@ document.querySelectorAll('.export-format-btn').forEach(btn => {
     const selectedItems = state.gallery.filter(item => state.selectedGalleryItems.has(item.id));
     await exportSelectedItems(selectedItems, format);
   });
+});
+
+// Pagination buttons
+prevPageBtn.addEventListener('click', () => {
+  if (state.galleryCurrentPage > 1) {
+    state.galleryCurrentPage--;
+    renderGallery();
+  }
+});
+
+nextPageBtn.addEventListener('click', () => {
+  const totalPages = Math.ceil(state.gallery.length / state.galleryItemsPerPage);
+  if (state.galleryCurrentPage < totalPages) {
+    state.galleryCurrentPage++;
+    renderGallery();
+  }
 });
 
 function clearCanvas() {
@@ -194,10 +216,18 @@ function renderGallery() {
   if (state.gallery.length === 0) {
     galleryGrid.innerHTML = '<div class="gallery-empty">No artwork saved yet.<br>Draw something and hit 💾</div>';
     exportBtn.classList.remove('visible');
+    paginationContainer.style.display = 'none';
     return;
   }
+
+  // Calculate pagination
+  const totalPages = Math.ceil(state.gallery.length / state.galleryItemsPerPage);
+  const startIndex = (state.galleryCurrentPage - 1) * state.galleryItemsPerPage;
+  const endIndex = startIndex + state.galleryItemsPerPage;
+  const paginatedItems = state.gallery.slice(startIndex, endIndex);
+
   galleryGrid.innerHTML = '';
-  state.gallery.forEach(item => {
+  paginatedItems.forEach(item => {
     // Skip items without dataURL
     if (!item.dataURL) {
       console.warn('Skipping gallery item without dataURL:', item);
@@ -259,6 +289,24 @@ function renderGallery() {
 
   updateExportButton();
   updateSelectAllCheckbox();
+  updatePaginationControls(totalPages);
+}
+
+function updatePaginationControls(totalPages) {
+  // Show/hide pagination container
+  if (totalPages > 1) {
+    paginationContainer.style.display = 'flex';
+  } else {
+    paginationContainer.style.display = 'none';
+    return;
+  }
+
+  // Update page info
+  paginationInfo.textContent = `Page ${state.galleryCurrentPage} of ${totalPages}`;
+
+  // Update button states
+  prevPageBtn.disabled = state.galleryCurrentPage === 1;
+  nextPageBtn.disabled = state.galleryCurrentPage === totalPages;
 }
 
 function updateExportButton() {

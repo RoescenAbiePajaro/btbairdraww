@@ -1791,3 +1791,69 @@ body {
 @media (min-width: 1025px) {
   #sideMenu { width:240px; }
 }
+
+/* ─── PAGINATION (Purple Theme) ─── */
+.pagination-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 0;
+  border-top: 1px solid var(--border);
+  margin-top: 16px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #9333ea;
+  border-radius: 10px;
+  background: rgba(147, 51, 234, 0.2);
+  color: #c084fc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: rgba(147, 51, 234, 0.4);
+  border-color: #a855f7;
+  color: #e9d5ff;
+  transform: scale(1.05);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: rgba(147, 51, 234, 0.1);
+  border-color: rgba(147, 51, 234, 0.3);
+}
+
+.pagination-info {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+  letter-spacing: 1px;
+  min-width: 80px;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .pagination-container {
+    gap: 8px;
+    padding: 16px 0;
+  }
+  .pagination-btn {
+    width: 36px;
+    height: 36px;
+  }
+  .pagination-info {
+    font-size: 0.65rem;
+    min-width: 70px;
+  }
+}

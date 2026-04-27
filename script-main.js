@@ -34,6 +34,9 @@ const state = {
   undoStack: [],        // History states for undo
   redoStack: [],        // History states for redo
   maxHistory: 50,       // Maximum history states
+  // Pagination state
+  galleryCurrentPage: 1,
+  galleryItemsPerPage: 12,
 };
 
 // DOM refs
@@ -74,6 +77,10 @@ const exportModal = document.getElementById('exportModal');
 const cancelExportBtn = document.getElementById('cancelExportBtn');
 const toolbarUndoBtn = document.getElementById('toolbarUndoBtn');
 const toolbarRedoBtn = document.getElementById('toolbarRedoBtn');
+const paginationContainer = document.getElementById('paginationContainer');
+const prevPageBtn = document.getElementById('prevPageBtn');
+const nextPageBtn = document.getElementById('nextPageBtn');
+const paginationInfo = document.getElementById('paginationInfo');
 
 const colorMap = { black:'#111111', pink:'#d52393', yellow:'#fef53d', blue:'#2d8bff', green:'#36fd26' };
 
