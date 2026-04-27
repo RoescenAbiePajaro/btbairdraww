@@ -474,3 +474,37 @@ function updateUndoRedoButtons() {
 if (toolbarUndoBtn) toolbarUndoBtn.addEventListener('click', undo);
 if (toolbarRedoBtn) toolbarRedoBtn.addEventListener('click', redo);
 updateUndoRedoButtons();
+
+// ═══════════════════════════════════════════════════════
+// HAMBURGER MENU
+// ═══════════════════════════════════════════════════════
+const hamburgerBtn = document.getElementById('hamburgerBtn');
+const sideMenu = document.getElementById('sideMenu');
+const sideMenuOverlay = document.getElementById('sideMenuOverlay');
+
+function toggleSideMenu() {
+  const isOpen = sideMenu.classList.contains('open');
+  if (isOpen) {
+    sideMenu.classList.remove('open');
+    hamburgerBtn.classList.remove('open');
+    sideMenuOverlay.classList.remove('visible');
+  } else {
+    sideMenu.classList.add('open');
+    hamburgerBtn.classList.add('open');
+    sideMenuOverlay.classList.add('visible');
+  }
+}
+
+function closeSideMenu() {
+  sideMenu.classList.remove('open');
+  hamburgerBtn.classList.remove('open');
+  sideMenuOverlay.classList.remove('visible');
+}
+
+if (hamburgerBtn) hamburgerBtn.addEventListener('click', toggleSideMenu);
+if (sideMenuOverlay) sideMenuOverlay.addEventListener('click', closeSideMenu);
+
+// Close menu on any side-menu-btn click
+document.querySelectorAll('.side-menu-btn').forEach(btn => {
+  btn.addEventListener('click', closeSideMenu);
+});

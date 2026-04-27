@@ -980,7 +980,8 @@ function showScreen(name) {
   // Hide/show main screen elements based on active screen
   const mainElements = [drawCanvas, handCanvas, templateCanvas, videoEl, cursorDot, eraserRing, eraseFlash, 
                         document.getElementById('toolbar'), document.getElementById('hud'), 
-                        document.getElementById('topRight'), document.getElementById('gestureHint'),
+                        document.getElementById('hamburgerBtn'), document.getElementById('sideMenu'),
+                        document.getElementById('sideMenuOverlay'), document.getElementById('gestureHint'),
                         textControls, shapeControls, doneEditingBtn, document.getElementById('brushInfo')];
   
   if (name === 'gallery') {
