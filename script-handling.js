@@ -244,6 +244,10 @@ document.getElementById('sizeUp').addEventListener('click', () => {
   if (state.mode === 'eraser') {
     state.eraseRadius = Math.min(100, state.eraseRadius + 8);
     sizeDisplay.textContent = state.eraseRadius;
+  } else if (state.mode === 'text') {
+    state.textSize = Math.min(64, state.textSize + 4);
+    sizeDisplay.textContent = state.textSize;
+    updateAllTextSizes();
   } else {
     state.brushSize = Math.min(40, state.brushSize + 2);
     sizeDisplay.textContent = state.brushSize;
@@ -253,6 +257,10 @@ document.getElementById('sizeDown').addEventListener('click', () => {
   if (state.mode === 'eraser') {
     state.eraseRadius = Math.max(10, state.eraseRadius - 8);
     sizeDisplay.textContent = state.eraseRadius;
+  } else if (state.mode === 'text') {
+    state.textSize = Math.max(16, state.textSize - 4);
+    sizeDisplay.textContent = state.textSize;
+    updateAllTextSizes();
   } else {
     state.brushSize = Math.max(2, state.brushSize - 2);
     sizeDisplay.textContent = state.brushSize;
@@ -293,8 +301,14 @@ function setMode(m) {
   }
   // Update brush info label
   const sizeLabel = document.getElementById('sizeLabel');
-  if (sizeLabel) sizeLabel.textContent = m === 'eraser' ? 'ERASE' : 'SIZE';
-  sizeDisplay.textContent = m === 'eraser' ? state.eraseRadius : state.brushSize;
+  if (sizeLabel) sizeLabel.textContent = m === 'eraser' ? 'ERASE' : (m === 'text' ? 'TEXT' : 'SIZE');
+  if (m === 'eraser') {
+    sizeDisplay.textContent = state.eraseRadius;
+  } else if (m === 'text') {
+    sizeDisplay.textContent = state.textSize;
+  } else {
+    sizeDisplay.textContent = state.brushSize;
+  }
   if (m === 'eraser') showToast('◎ Eraser mode — ✋ high-five OR move hand to erase');
   else if (m === 'text') showToast('T Text mode — ✋ high-five to drag text');
   else if (m === 'shape') showToast('◇ Shape mode — ☝ Index to start, ✌ Peace to place');
@@ -305,6 +319,14 @@ function setMode(m) {
 // TEXT ITEMS
 // ═══════════════════════════════════════════════════════
 let textIdCounter = 0;
+
+function updateAllTextSizes() {
+  saveState();
+  state.textItems.forEach(item => {
+    item.fontSize = state.textSize;
+    item.el.style.fontSize = state.textSize + 'px';
+  });
+}
 
 document.getElementById('addTextBtn').addEventListener('click', addText);
 textInput.addEventListener('keydown', e => { if(e.key==='Enter') addText(); });
@@ -332,11 +354,12 @@ function addText() {
   el.style.left = x + 'px';
   el.style.top  = y + 'px';
   el.style.color = state.color;
+  el.style.fontSize = state.textSize + 'px';
   el.dataset.id = id;
   el.contentEditable = 'false';
   textLayer.appendChild(el);
 
-  const item = { id, text:txt, x, y, color:state.color, el };
+  const item = { id, text:txt, x, y, color:state.color, fontSize:state.textSize, el };
   state.textItems.push(item);
 
   // Mouse drag support too

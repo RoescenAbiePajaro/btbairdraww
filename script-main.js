@@ -7,6 +7,7 @@ const state = {
   color: '#111111',
   brushSize: 8,
   eraseRadius: 40,
+  textSize: 28,
   isDrawing: false,
   isErasing: false,     // Track continuous erase action
   lastX: null, lastY: null,
@@ -271,7 +272,8 @@ function saveState() {
     text: item.text,
     x: item.x,
     y: item.y,
-    color: item.color
+    color: item.color,
+    fontSize: item.fontSize || 28
   }));
   const shapeItemsState = state.shapeItems.map(item => ({
     id: item.id,
@@ -313,7 +315,8 @@ function undo() {
     text: item.text,
     x: item.x,
     y: item.y,
-    color: item.color
+    color: item.color,
+    fontSize: item.fontSize || 28
   }));
   const shapeItemsState = state.shapeItems.map(item => ({
     id: item.id,
@@ -353,7 +356,8 @@ function redo() {
     text: item.text,
     x: item.x,
     y: item.y,
-    color: item.color
+    color: item.color,
+    fontSize: item.fontSize || 28
   }));
   const shapeItemsState = state.shapeItems.map(item => ({
     id: item.id,
@@ -402,11 +406,12 @@ function restoreState(historyState) {
     el.style.left = item.x + 'px';
     el.style.top = item.y + 'px';
     el.style.color = item.color;
+    el.style.fontSize = (item.fontSize || 28) + 'px';
     el.dataset.id = item.id;
     el.contentEditable = 'false';
     textLayer.appendChild(el);
 
-    const textItem = { id: item.id, text: item.text, x: item.x, y: item.y, color: item.color, el };
+    const textItem = { id: item.id, text: item.text, x: item.x, y: item.y, color: item.color, fontSize: item.fontSize || 28, el };
     state.textItems.push(textItem);
 
     // Re-attach event listeners
