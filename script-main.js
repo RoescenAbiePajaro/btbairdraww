@@ -7,6 +7,7 @@ const state = {
   color: '#111111',
   brushSize: 8,
   eraseRadius: 40,
+  textSize: 28,
   isDrawing: false,
   isErasing: false,     // Track continuous erase action
   lastX: null, lastY: null,
