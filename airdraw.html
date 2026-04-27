@@ -83,10 +83,13 @@
 
   <!-- Text Controls -->
   <div id="textControls">
-    <div style="font-size:.65rem;color:var(--muted);letter-spacing:2px">TEXT MODE</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-size:.65rem;color:var(--muted);letter-spacing:2px">TEXT MODE</div>
+      <button id="textBackBtn" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text);font-family:'Space Mono',monospace;font-size:.7rem;cursor:pointer;transition:all .15s">✕</button>
+    </div>
     <input id="textInput" type="text" placeholder="Type your text…" maxlength="50">
     <button class="add-text-btn" id="addTextBtn">+ Add Text</button>
-    <button class="delete-text-btn" id="deleteTextBtn" style="display:none; background:#ee4444; border:1px solid var(--border); border-radius:10px; padding:8px 12px; color:var(--text); font-family:'Space Mono',monospace; font-size:.7rem; cursor:pointer; transition:all .15s; margin-top:8px; width:100%;">🗑 Delete Text</button>
+    <button class="delete-text-btn" id="deleteTextBtn" style="display:none; background:#ee4444; border:1px solid var(--border); border-radius:10px; padding:8px 12px; color:var(--text); font-family:'Segoe UI',sans-serif; font-size:.7rem; cursor:pointer; transition:all .15s; margin-top:8px; width:100%;">🗑 Delete Text</button>
     <div style="margin-top:10px;font-size:.6rem;color:var(--muted);text-align:center">Double-click to show edit/delete, ✋ High-five to drag or use mouse</div>
   </div>
 
