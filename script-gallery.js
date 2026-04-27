@@ -163,7 +163,7 @@ async function saveArtwork() {
   });
 
   const dataURL = offscreen.toDataURL('image/png');
-  const ts = new Date().toLocaleTimeString();
+  const ts = new Date().toLocaleString();
   
   // Save full state for loading back
   const drawingData = drawCanvas.toDataURL();
@@ -245,6 +245,7 @@ function renderGallery() {
       <input type="checkbox" class="card-checkbox" data-id="${item.id}" ${state.selectedGalleryItems.has(item.id) ? 'checked' : ''}>
       <img class="gallery-thumb" src="${item.dataURL}" alt="Artwork" data-id="${item.id}" onerror="this.style.display='none';this.parentElement.querySelector('.error-placeholder').style.display='block';">
       <div class="error-placeholder" style="display:none;padding:20px;text-align:center;color:var(--muted);font-size:0.7rem;">Image unavailable</div>
+      <div class="gallery-timestamp" style="font-size:0.65rem;color:var(--muted);padding:4px 8px;text-align:center;">${item.timestamp || ''}</div>
       <div class="gallery-actions">
         <button class="load-btn" data-id="${item.id}">📂Load</button>
         <button class="dl-btn" data-id="${item.id}" data-type="png">PNG</button>
