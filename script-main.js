@@ -73,8 +73,8 @@ const selectAllCheckbox = document.getElementById('selectAllCheckbox');
 const exportBtn = document.getElementById('exportBtn');
 const exportModal = document.getElementById('exportModal');
 const cancelExportBtn = document.getElementById('cancelExportBtn');
-const undoBtn = document.getElementById('undoBtn');
-const redoBtn = document.getElementById('redoBtn');
+const toolbarUndoBtn = document.getElementById('toolbarUndoBtn');
+const toolbarRedoBtn = document.getElementById('toolbarRedoBtn');
 
 const colorMap = { black:'#111111', pink:'#d52393', yellow:'#fef53d', blue:'#2d8bff', green:'#36fd26' };
 
@@ -460,13 +460,17 @@ function restoreState(historyState) {
 }
 
 function updateUndoRedoButtons() {
-  undoBtn.style.opacity = state.undoStack.length > 0 ? '1' : '0.3';
-  undoBtn.style.pointerEvents = state.undoStack.length > 0 ? 'auto' : 'none';
-  redoBtn.style.opacity = state.redoStack.length > 0 ? '1' : '0.3';
-  redoBtn.style.pointerEvents = state.redoStack.length > 0 ? 'auto' : 'none';
+  if (toolbarUndoBtn) {
+    toolbarUndoBtn.style.opacity = state.undoStack.length > 0 ? '1' : '0.3';
+    toolbarUndoBtn.style.pointerEvents = state.undoStack.length > 0 ? 'auto' : 'none';
+  }
+  if (toolbarRedoBtn) {
+    toolbarRedoBtn.style.opacity = state.redoStack.length > 0 ? '1' : '0.3';
+    toolbarRedoBtn.style.pointerEvents = state.redoStack.length > 0 ? 'auto' : 'none';
+  }
 }
 
 // Initialize undo/redo buttons
-undoBtn.addEventListener('click', undo);
-redoBtn.addEventListener('click', redo);
+if (toolbarUndoBtn) toolbarUndoBtn.addEventListener('click', undo);
+if (toolbarRedoBtn) toolbarRedoBtn.addEventListener('click', redo);
 updateUndoRedoButtons();

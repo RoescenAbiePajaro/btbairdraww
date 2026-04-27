@@ -54,12 +54,6 @@
 
   <!-- Top Right Buttons -->
   <div id="topRight">
-    <button class="icon-btn" id="undoBtn" title="Undo">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
-    </button>
-    <button class="icon-btn" id="redoBtn" title="Redo">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
-    </button>
     <button class="icon-btn" id="galleryBtn" title="Gallery">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
     </button>
@@ -90,7 +84,7 @@
     </div>
     <button class="add-text-btn" id="addTextBtn">+ Add Text</button>
     <button class="delete-text-btn" id="deleteTextBtn" style="display:none; background:#ee4444; border:1px solid var(--border); border-radius:10px; padding:8px 12px; color:var(--text); font-family:'Space Mono',monospace; font-size:.7rem; cursor:pointer; transition:all .15s; margin-top:8px; width:100%;">🗑 Delete Text</button>
-    <div style="margin-top:10px;font-size:.6rem;color:var(--muted);text-align:center">Double-click to edit, ✋ High-five to drag or use mouse</div>
+    <div style="margin-top:10px;font-size:.6rem;color:var(--muted);text-align:center">Double-click to show edit/delete, ✋ High-five to drag or use mouse</div>
   </div>
 
   <!-- Shape Controls -->
@@ -120,6 +114,14 @@
     <!-- Size -->
     <button class="size-btn" id="sizeDown">−</button>
     <button class="size-btn" id="sizeUp">+</button>
+    <div class="tool-sep"></div>
+    <!-- Undo/Redo -->
+    <button class="icon-btn toolbar-undo-btn" id="toolbarUndoBtn" title="Undo" style="width:28px;height:28px;padding:4px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+    </button>
+    <button class="icon-btn toolbar-redo-btn" id="toolbarRedoBtn" title="Redo" style="width:28px;height:28px;padding:4px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
+    </button>
     <div class="tool-sep"></div>
     <!-- Modes -->
     <button class="tool-btn active" id="drawModeBtn">DRAW</button>
