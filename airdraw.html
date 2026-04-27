@@ -95,14 +95,17 @@
 
   <!-- Shape Controls -->
   <div id="shapeControls">
-    <div style="font-size:.65rem;color:var(--muted);letter-spacing:2px">SHAPE MODE</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-size:.65rem;color:var(--muted);letter-spacing:2px">SHAPE MODE</div>
+      <button id="shapeBackBtn" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text);font-family:'Space Mono',monospace;font-size:.7rem;cursor:pointer;transition:all .15s">✕</button>
+    </div>
     <div id="shapeRow" style="display:flex;gap:8px;margin-top:8px">
       <button class="tool-btn active" data-shape="square">□ Square</button>
       <button class="tool-btn" data-shape="rectangle">▭ Rect</button>
       <button class="tool-btn" data-shape="triangle">△ Tri</button>
       <button class="tool-btn" data-shape="circle">○ Circle</button>
     </div>
-    <div style="margin-top:10px;font-size:.6rem;color:var(--muted);text-align:center">☝ Index to start, drag to size<br>✌ Peace sign to place <br> ✋ High-five to drag</div>
+    <div style="margin-top:10px;font-size:.6rem;color:var(--muted);text-align:center">☝ Index to start, drag to size / ✌ Peace sign to place / ✋ High-five to drag</div>
   </div>
 
   <!-- Done Editing Button -->

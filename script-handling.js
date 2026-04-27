@@ -264,6 +264,7 @@ document.getElementById('textModeBtn').addEventListener('click', () => setMode('
 document.getElementById('shapeModeBtn').addEventListener('click', () => setMode('shape'));
 document.getElementById('eraserBtn').addEventListener('click', () => setMode('eraser'));
 document.getElementById('textBackBtn').addEventListener('click', () => setMode('draw'));
+document.getElementById('shapeBackBtn').addEventListener('click', () => setMode('draw'));
 
 function setMode(m) {
   state.mode = m;
