@@ -240,14 +240,6 @@ document.querySelectorAll('.color-btn').forEach(btn => {
   });
 });
 
-document.querySelectorAll('.tc-color').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tc-color').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    state.textColor = btn.dataset.color;
-  });
-});
-
 document.getElementById('sizeUp').addEventListener('click', () => {
   if (state.mode === 'eraser') {
     state.eraseRadius = Math.min(100, state.eraseRadius + 8);
@@ -337,12 +329,12 @@ function addText() {
   el.textContent = txt;
   el.style.left = x + 'px';
   el.style.top  = y + 'px';
-  el.style.color = state.textColor;
+  el.style.color = state.color;
   el.dataset.id = id;
   el.contentEditable = 'false';
   textLayer.appendChild(el);
 
-  const item = { id, text:txt, x, y, color:state.textColor, el };
+  const item = { id, text:txt, x, y, color:state.color, el };
   state.textItems.push(item);
 
   // Mouse drag support too

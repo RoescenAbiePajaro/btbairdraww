@@ -18,7 +18,6 @@ const state = {
   selectedGalleryItems: new Set(), // IDs of selected items
   textItems: [],        // {id, text, x, y, color, el}[]
   selectedText: null,
-  textColor: '#ffffff',
   textDragActive: false,
   textDragId: null,
   textDragOffX: 0, textDragOffY: 0,
