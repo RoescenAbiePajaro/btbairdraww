@@ -85,7 +85,7 @@
   <div id="textControls">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div style="font-size:.65rem;color:var(--muted);letter-spacing:2px">TEXT MODE</div>
-      <button id="textBackBtn" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text);font-family:'Segoe UI',sans-serif; font-size:.7rem;cursor:pointer;transition:all .15s">✕</button>
+      <button id="textBackBtn" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text);font-family:'Space Mono',monospace;font-size:.7rem;cursor:pointer;transition:all .15s">✕</button>
     </div>
     <input id="textInput" type="text" placeholder="Type your text…" maxlength="50">
     <button class="add-text-btn" id="addTextBtn">+ Add Text</button>
@@ -97,7 +97,7 @@
   <div id="shapeControls">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div style="font-size:.65rem;color:var(--muted);letter-spacing:2px">SHAPE MODE</div>
-      <button id="shapeBackBtn" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text);font-family:'Segoe UI',sans-serif; font-size:.7rem;cursor:pointer;transition:all .15s">✕</button>
+      <button id="shapeBackBtn" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text);font-family:'Space Mono',monospace;font-size:.7rem;cursor:pointer;transition:all .15s">✕</button>
     </div>
     <div id="shapeRow" style="display:flex;gap:8px;margin-top:8px">
       <button class="tool-btn active" data-shape="square">□ Square</button>
@@ -196,7 +196,7 @@
       ✋ High-five (open hand) to erase /<br>
       drag text and drag shapes
     </div>
-    <button id="closeGestureHintBtn" style="margin-top:24px;width:100%;background:#9333ea;border:none;border-radius:10px;padding:12px;color:#fff;font-family:'Segoe UI',sans-serif; font-size:.8rem;cursor:pointer;transition:all .15s">Got it!</button>
+    <button id="closeGestureHintBtn" style="margin-top:24px;width:100%;background:#9333ea;border:none;border-radius:10px;padding:12px;color:#fff;font-family:'Space Mono',monospace;font-size:.8rem;cursor:pointer;transition:all .15s">Got it!</button>
   </div>
 </div>
 
@@ -228,18 +228,6 @@
       </button>
     </div>
     <button id="cancelExportBtn" style="margin-top:20px;width:100%;background:#ee4444;border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-family:'Segoe UI',sans-serif;font-size:.75rem;cursor:pointer;transition:all .15s">Cancel</button>
-  </div>
-</div>
-
-<!-- ─── SAVE NAME MODAL ─── -->
-<div id="saveNameModal" style="position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);z-index:9999;display:none;align-items:center;justify-content:center">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px;max-width:400px;width:90%">
-    <h3 style="font-family:'Segoe UI',sans-serif;font-size:1.5rem;margin-bottom:24px;color:var(--text)">Name Your Artwork</h3>
-    <input type="text" id="saveNameInput" placeholder="Enter artwork name..." maxlength="50" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--text);font-family:'Segoe UI',sans-serif;font-size:1rem;margin-bottom:16px;outline:none;transition:border-color .15s">
-    <div style="display:flex;gap:12px">
-      <button id="cancelSaveNameBtn" style="flex:1;background:#ee4444;border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-family:'Segoe UI',sans-serif;font-size:.9rem;cursor:pointer;transition:all .15s">Cancel</button>
-      <button id="confirmSaveNameBtn" style="flex:1;background:#9333ea;border:none;border-radius:10px;padding:12px;color:#fff;font-family:'Segoe UI',sans-serif; font-size:.9rem;cursor:pointer;transition:all .15s">Save</button>
-    </div>
   </div>
 </div>
 

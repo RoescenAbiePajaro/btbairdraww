@@ -7,7 +7,6 @@ const state = {
   color: '#111111',
   brushSize: 8,
   eraseRadius: 40,
-  textSize: 28,
   isDrawing: false,
   isErasing: false,     // Track continuous erase action
   lastX: null, lastY: null,
@@ -82,10 +81,6 @@ const paginationContainer = document.getElementById('paginationContainer');
 const prevPageBtn = document.getElementById('prevPageBtn');
 const nextPageBtn = document.getElementById('nextPageBtn');
 const paginationInfo = document.getElementById('paginationInfo');
-const saveNameModal = document.getElementById('saveNameModal');
-const saveNameInput = document.getElementById('saveNameInput');
-const cancelSaveNameBtn = document.getElementById('cancelSaveNameBtn');
-const confirmSaveNameBtn = document.getElementById('confirmSaveNameBtn');
 
 const colorMap = { black:'#111111', pink:'#d52393', yellow:'#fef53d', blue:'#2d8bff', green:'#36fd26' };
 
@@ -139,7 +134,7 @@ function drawTemplate() {
 
   // Corner label
   tCtx.save();
-  tCtx.font = '500 11px Segoe UI,sans-serif';
+  tCtx.font = '500 11px monospace';
   tCtx.fillStyle = 'rgba(255,45,120,0.5)';
   tCtx.textAlign = 'left';
   tCtx.fillText('AIRDRAW · BEYOND THE BRUSH', 36, h-36);
@@ -272,8 +267,7 @@ function saveState() {
     text: item.text,
     x: item.x,
     y: item.y,
-    color: item.color,
-    fontSize: item.fontSize || 28
+    color: item.color
   }));
   const shapeItemsState = state.shapeItems.map(item => ({
     id: item.id,
@@ -315,8 +309,7 @@ function undo() {
     text: item.text,
     x: item.x,
     y: item.y,
-    color: item.color,
-    fontSize: item.fontSize || 28
+    color: item.color
   }));
   const shapeItemsState = state.shapeItems.map(item => ({
     id: item.id,
@@ -356,8 +349,7 @@ function redo() {
     text: item.text,
     x: item.x,
     y: item.y,
-    color: item.color,
-    fontSize: item.fontSize || 28
+    color: item.color
   }));
   const shapeItemsState = state.shapeItems.map(item => ({
     id: item.id,
@@ -406,12 +398,11 @@ function restoreState(historyState) {
     el.style.left = item.x + 'px';
     el.style.top = item.y + 'px';
     el.style.color = item.color;
-    el.style.fontSize = (item.fontSize || 28) + 'px';
     el.dataset.id = item.id;
     el.contentEditable = 'false';
     textLayer.appendChild(el);
 
-    const textItem = { id: item.id, text: item.text, x: item.x, y: item.y, color: item.color, fontSize: item.fontSize || 28, el };
+    const textItem = { id: item.id, text: item.text, x: item.x, y: item.y, color: item.color, el };
     state.textItems.push(textItem);
 
     // Re-attach event listeners
