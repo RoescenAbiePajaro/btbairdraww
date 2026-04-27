@@ -81,6 +81,10 @@ const paginationContainer = document.getElementById('paginationContainer');
 const prevPageBtn = document.getElementById('prevPageBtn');
 const nextPageBtn = document.getElementById('nextPageBtn');
 const paginationInfo = document.getElementById('paginationInfo');
+const saveNameModal = document.getElementById('saveNameModal');
+const saveNameInput = document.getElementById('saveNameInput');
+const cancelSaveNameBtn = document.getElementById('cancelSaveNameBtn');
+const confirmSaveNameBtn = document.getElementById('confirmSaveNameBtn');
 
 const colorMap = { black:'#111111', pink:'#d52393', yellow:'#fef53d', blue:'#2d8bff', green:'#36fd26' };
 
@@ -134,7 +138,7 @@ function drawTemplate() {
 
   // Corner label
   tCtx.save();
-  tCtx.font = '500 11px monospace';
+  tCtx.font = '500 11px Segoe UI,sans-serif';
   tCtx.fillStyle = 'rgba(255,45,120,0.5)';
   tCtx.textAlign = 'left';
   tCtx.fillText('AIRDRAW · BEYOND THE BRUSH', 36, h-36);

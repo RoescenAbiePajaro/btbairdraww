@@ -2,10 +2,35 @@
 // ═══════════════════════════════════════════════════════
 // SAVE / GALLERY
 // ═══════════════════════════════════════════════════════
-document.getElementById('saveBtn').addEventListener('click', saveArtwork);
+document.getElementById('saveBtn').addEventListener('click', () => {
+  saveNameInput.value = '';
+  saveNameModal.style.display = 'flex';
+  saveNameInput.focus();
+});
 document.getElementById('clearBtn').addEventListener('click', clearCanvas);
 document.getElementById('galleryBtn').addEventListener('click', () => showScreen('gallery'));
 document.getElementById('backBtn').addEventListener('click', () => showScreen('main'));
+
+// Save name modal handlers
+cancelSaveNameBtn.addEventListener('click', () => {
+  saveNameModal.style.display = 'none';
+});
+
+confirmSaveNameBtn.addEventListener('click', () => {
+  const name = saveNameInput.value.trim() || 'Untitled';
+  saveNameModal.style.display = 'none';
+  saveArtwork(name);
+});
+
+saveNameInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const name = saveNameInput.value.trim() || 'Untitled';
+    saveNameModal.style.display = 'none';
+    saveArtwork(name);
+  } else if (e.key === 'Escape') {
+    saveNameModal.style.display = 'none';
+  }
+});
 
 // Select all checkbox
 selectAllCheckbox.addEventListener('change', (e) => {
@@ -107,7 +132,7 @@ function clearCanvas() {
   showToast('Canvas cleared');
 }
 
-async function saveArtwork() {
+async function saveArtwork(name) {
   // Flash
   saveFlash.style.opacity = '1';
   setTimeout(() => saveFlash.style.opacity = '0', 200);
@@ -154,7 +179,7 @@ async function saveArtwork() {
 
   // 4. Text items
   state.textItems.forEach(item => {
-    ctx.font = 'bold 28px Space Mono, monospace';
+    ctx.font = 'bold 28px Segoe UI,sans-serif';
     ctx.fillStyle = item.color;
     ctx.shadowColor = 'rgba(0,0,0,0.8)';
     ctx.shadowBlur = 8;
@@ -186,8 +211,9 @@ async function saveArtwork() {
   }));
   
   try {
-    // Save to server
+    // Save to server with name
     const savedArtwork = await saveArtworkToServer({
+      name,
       dataURL,
       timestamp: ts,
       drawingData,
@@ -195,8 +221,9 @@ async function saveArtwork() {
       shapeItemsData
     });
     
-    // Add to local state
+    // Add to local state with name
     state.gallery.unshift({ 
+      name,
       dataURL, 
       timestamp: ts, 
       id: savedArtwork.id,
@@ -245,6 +272,7 @@ function renderGallery() {
       <input type="checkbox" class="card-checkbox" data-id="${item.id}" ${state.selectedGalleryItems.has(item.id) ? 'checked' : ''}>
       <img class="gallery-thumb" src="${item.dataURL}" alt="Artwork" data-id="${item.id}" onerror="this.style.display='none';this.parentElement.querySelector('.error-placeholder').style.display='block';">
       <div class="error-placeholder" style="display:none;padding:20px;text-align:center;color:var(--muted);font-size:0.7rem;">Image unavailable</div>
+      <div class="gallery-name" style="padding:8px 12px;font-size:0.75rem;color:var(--text);font-family:'Segoe UI',sans-serif; white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name || 'Untitled'}</div>
       <div class="gallery-actions">
         <button class="load-btn" data-id="${item.id}">📂Load</button>
         <button class="dl-btn" data-id="${item.id}" data-type="png">PNG</button>

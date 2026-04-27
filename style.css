@@ -1835,7 +1835,7 @@ body {
 }
 
 .pagination-info {
-  font-family: 'Space Mono', monospace;
+  font-family: 'Segoe UI',sans-serif;
   font-size: 0.75rem;
   color: var(--muted);
   letter-spacing: 1px;

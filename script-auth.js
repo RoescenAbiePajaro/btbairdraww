@@ -107,6 +107,7 @@ async function loadUserGallery() {
       
       // Convert server data to client format
       state.gallery = galleryData.map(item => ({
+        name: item.name || 'Untitled',
         dataURL: item.dataURL || item.dataurl, // Handle both cases
         timestamp: item.timestamp,
         id: parseInt(item.id),
