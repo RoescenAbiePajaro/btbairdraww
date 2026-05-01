@@ -97,6 +97,11 @@ nextPageBtn.addEventListener('click', () => {
   }
 });
 
+// Close preview modal
+document.getElementById('closePreviewBtn').addEventListener('click', () => {
+  document.getElementById('previewModal').style.display = 'none';
+});
+
 function clearCanvas() {
   saveState();
   dCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
@@ -247,6 +252,7 @@ function renderGallery() {
       <div class="error-placeholder" style="display:none;padding:20px;text-align:center;color:var(--muted);font-size:0.7rem;">Image unavailable</div>
       <div class="gallery-timestamp" style="font-size:0.65rem;color:var(--muted);padding:4px 8px;text-align:center;">${item.timestamp || ''}</div>
       <div class="gallery-actions">
+        <button class="view-btn" data-id="${item.id}">👁View</button>
         <button class="load-btn" data-id="${item.id}">📂Load</button>
         <button class="dl-btn" data-id="${item.id}" data-type="png">PNG</button>
       </div>
@@ -285,6 +291,21 @@ function renderGallery() {
       const type = btn.dataset.type;
       const item = state.gallery.find(g => g.id === id);
       if (item) downloadItem(item, type);
+    });
+  });
+
+  galleryGrid.querySelectorAll('.view-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.dataset.id);
+      const item = state.gallery.find(g => g.id === id);
+      if (item) {
+        const previewModal = document.getElementById('previewModal');
+        const previewImage = document.getElementById('previewImage');
+        const previewTimestamp = document.getElementById('previewTimestamp');
+        previewImage.src = item.dataURL;
+        previewTimestamp.textContent = item.timestamp || '';
+        previewModal.style.display = 'flex';
+      }
     });
   });
 
