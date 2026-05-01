@@ -159,7 +159,7 @@ async function saveArtwork() {
 
   // 4. Text items
   state.textItems.forEach(item => {
-    ctx.font = 'bold 28px Space Mono, monospace';
+    ctx.font = 'bold 28px Segoe UI, sans-serif';
     ctx.fillStyle = item.color;
     ctx.shadowColor = 'rgba(0,0,0,0.8)';
     ctx.shadowBlur = 8;
