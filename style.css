@@ -1857,3 +1857,30 @@ body {
     min-width: 70px;
   }
 }
+
+/* Back Button Styles */
+.back-button {
+  position: absolute;
+  top: 1.5rem;
+  left: 1.5rem;
+  background-color: #ef4444;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+  z-index: 1000;
+}
+
+.back-button:hover {
+  background-color: #dc2626;
+}
+
+.back-button-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
