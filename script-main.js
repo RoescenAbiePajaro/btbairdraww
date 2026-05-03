@@ -337,7 +337,7 @@ function undo() {
   const previousState = state.undoStack.pop();
   restoreState(previousState);
   updateUndoRedoButtons();
-  showToast('↶ Undone');
+  showToast('↶ Undo');
 }
 
 function redo() {
@@ -377,7 +377,7 @@ function redo() {
   const nextState = state.redoStack.pop();
   restoreState(nextState);
   updateUndoRedoButtons();
-  showToast('↷ Redone');
+  showToast('↷ Redo');
 }
 
 function restoreState(historyState) {
