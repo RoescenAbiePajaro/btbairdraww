@@ -82,6 +82,9 @@ const paginationContainer = document.getElementById('paginationContainer');
 const prevPageBtn = document.getElementById('prevPageBtn');
 const nextPageBtn = document.getElementById('nextPageBtn');
 const paginationInfo = document.getElementById('paginationInfo');
+const guideBtn = document.getElementById('guideBtn');
+const guideModal = document.getElementById('guideModal');
+const closeGuideBtn = document.getElementById('closeGuideBtn');
 
 const colorMap = { black:'#111111', pink:'#d52393', yellow:'#fef53d', blue:'#2d8bff', green:'#36fd26' };
 
@@ -514,4 +517,67 @@ if (sideMenuOverlay) sideMenuOverlay.addEventListener('click', closeSideMenu);
 // Close menu on any side-menu-btn click
 document.querySelectorAll('.side-menu-btn').forEach(btn => {
   btn.addEventListener('click', closeSideMenu);
+});
+
+// ═══════════════════════════════════════════════════════
+// GUIDE MODAL
+// ═══════════════════════════════════════════════════════
+function openGuideModal() {
+  guideModal.style.display = 'flex';
+  closeSideMenu();
+}
+
+function closeGuideModal() {
+  guideModal.style.display = 'none';
+  // Close all dropdowns
+  document.querySelectorAll('.guide-content').forEach(content => {
+    content.style.display = 'none';
+  });
+  document.querySelectorAll('.guide-dropdown-btn span:last-child').forEach(arrow => {
+    arrow.style.transform = 'rotate(0deg)';
+  });
+}
+
+if (guideBtn) guideBtn.addEventListener('click', openGuideModal);
+if (closeGuideBtn) closeGuideBtn.addEventListener('click', closeGuideModal);
+
+// Close modal when clicking outside
+if (guideModal) {
+  guideModal.addEventListener('click', (e) => {
+    if (e.target === guideModal) {
+      closeGuideModal();
+    }
+  });
+}
+
+// Dropdown toggle functionality
+document.querySelectorAll('.guide-dropdown-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const guideType = btn.getAttribute('data-guide');
+    const content = document.getElementById(`guide-${guideType}`);
+    const arrow = btn.querySelector('span:last-child');
+    
+    if (content.style.display === 'none' || content.style.display === '') {
+      // Close all other dropdowns
+      document.querySelectorAll('.guide-content').forEach(c => {
+        if (c.id !== `guide-${guideType}`) {
+          c.style.display = 'none';
+        }
+      });
+      document.querySelectorAll('.guide-dropdown-btn span:last-child').forEach(a => {
+        if (a !== arrow) {
+          a.style.transform = 'rotate(0deg)';
+        }
+      });
+      
+      // Open this dropdown
+      content.style.display = 'block';
+      arrow.style.transform = 'rotate(180deg)';
+    } else {
+      // Close this dropdown
+      content.style.display = 'none';
+      arrow.style.transform = 'rotate(0deg)';
+    }
+  });
 });

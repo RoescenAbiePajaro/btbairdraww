@@ -67,6 +67,10 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
       <span>Save</span>
     </button>
+    <button class="side-menu-btn" id="guideBtn" title="Guide">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+      <span>Guide</span>
+    </button>
     <button class="side-menu-btn" id="logoutBtn" title="Logout">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
       <span>Logout</span>
@@ -228,7 +232,209 @@
         </div>
       </button>
     </div>
-    <button id="cancelExportBtn" style="margin-top:20px;width:100%;background:#ee4444;border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-family:'Segoe UI',sans-serif;font-size:.75rem;cursor:pointer;transition:all .15s">Cancel</button>
+    <button id="cancelExportBtn" style="margin-top:20px;width:100%;background:#ee4444;border:none;border-radius:10px;padding:12px;color:var(--text);font-family:'Segoe UI',sans-serif;font-size:.75rem;cursor:pointer;transition:all .15s">Cancel</button>
+  </div>
+</div>
+
+<!-- ─── GUIDE MODAL ─── -->
+<div id="guideModal" style="position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);z-index:9999;display:none;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px;max-width:500px;width:90%;max-height:85vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <h3 style="font-family:'Segoe UI',sans-serif;font-size:1.5rem;color:var(--text)">User Guide</h3>
+      <button id="closeGuideBtn" style="background:transparent;border:none;color:var(--muted);font-size:24px;cursor:pointer;transition:all .15s">×</button>
+    </div>
+    
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <button class="guide-dropdown-btn" data-guide="handgesture" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;color:var(--text);font-family:'Segoe UI',sans-serif;font-size:.85rem;cursor:pointer;transition:all .15s;text-align:left;display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:1.5rem">👋</span>
+          <div>
+            <div style="font-weight:700">Hand Gesture Guide</div>
+            <div style="font-size:.65rem;color:var(--muted)">Learn hand gestures for camera detection</div>
+          </div>
+        </div>
+        <span style="font-size:1.2rem;transition:transform .3s">▼</span>
+      </button>
+      
+      <div class="guide-content" id="guide-handgesture" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:-8px">
+        <div style="font-size:.8rem;line-height:1.8;color:var(--text)">
+          <strong>📐 Position your hand properly:</strong><br>
+          • Keep your hand 30-60cm from the camera<br>
+          • Ensure good lighting on your hand<br>
+          • Spread fingers clearly for detection<br><br>
+          <strong>👆 Index Finger (Draw Mode):</strong><br>
+          • Extend only your index finger<br>
+          • Keep other fingers closed<br>
+          • Move finger to draw on canvas<br><br>
+          <strong>✌️ Peace Sign (Place Shapes):</strong><br>
+          • Extend index and middle fingers<br>
+          • Keep other fingers closed<br>
+          • Use to place shapes after sizing<br><br>
+          <strong>✋ Open Hand (Eraser/Drag):</strong><br>
+          • Spread all 5 fingers openly<br>
+          • Use to erase or drag objects<br>
+          • Move hand over area to erase<br><br>
+          <strong>💡 Tips for better detection:</strong><br>
+          • Avoid cluttered backgrounds<br>
+          • Keep hand steady when gesturing<br>
+          • Ensure camera is at eye level
+        </div>
+      </div>
+      
+      <button class="guide-dropdown-btn" data-guide="eraser" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;color:var(--text);font-family:'Segoe UI',sans-serif;font-size:.85rem;cursor:pointer;transition:all .15s;text-align:left;display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:1.5rem">🧹</span>
+          <div>
+            <div style="font-weight:700">Eraser Mode Guide</div>
+            <div style="font-size:.65rem;color:var(--muted)">How to use eraser with hand gestures</div>
+          </div>
+        </div>
+        <span style="font-size:1.2rem;transition:transform .3s">▼</span>
+      </button>
+      
+      <div class="guide-content" id="guide-eraser" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:-8px">
+        <div style="font-size:.8rem;line-height:1.8;color:var(--text)">
+          <strong>🎯 Activating Eraser Mode:</strong><br>
+          • Click the ERASE button in toolbar<br>
+          • Or use ✋ open hand gesture<br><br>
+          <strong>👋 Eraser Hand Position:</strong><br>
+          • Spread all 5 fingers openly<br>
+          • Hold hand 30-50cm from camera<br>
+          • Ensure palm faces camera directly<br>
+          • Keep fingers spread wide for detection<br><br>
+          <strong>🔄 Using the Eraser:</strong><br>
+          • Move your open hand over areas to erase<br>
+          • The eraser ring shows active area<br>
+          • Move slowly for precise erasing<br>
+          • Large hand movements erase larger areas<br><br>
+          <strong>💡 Eraser Tips:</strong><br>
+          • Good lighting improves detection<br>
+          • Keep hand steady while erasing<br>
+          • Use index finger for precise control<br>
+          • Switch back to DRAW mode when done
+        </div>
+      </div>
+      
+      <button class="guide-dropdown-btn" data-guide="shapes" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;color:var(--text);font-family:'Segoe UI',sans-serif;font-size:.85rem;cursor:pointer;transition:all .15s;text-align:left;display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:1.5rem">⬛</span>
+          <div>
+            <div style="font-weight:700">Shapes Mode Guide</div>
+            <div style="font-size:.65rem;color:var(--muted)">Create shapes with hand gestures</div>
+          </div>
+        </div>
+        <span style="font-size:1.2rem;transition:transform .3s">▼</span>
+      </button>
+      
+      <div class="guide-content" id="guide-shapes" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:-8px">
+        <div style="font-size:.8rem;line-height:1.8;color:var(--text)">
+          <strong>🎨 Activating Shapes Mode:</strong><br>
+          • Click the SHAPE button in toolbar<br>
+          • Select shape type (Square, Rectangle, Triangle, Circle)<br><br>
+          <strong>👆 Drawing Shapes:</strong><br>
+          • Use ☝️ index finger to start shape<br>
+          • Drag finger to size the shape<br>
+          • Shape preview appears as you drag<br><br>
+          <strong>✌️ Placing Shapes:</strong><br>
+          • Use ✌️ peace sign to place shape<br>
+          • Shape becomes permanent on canvas<br>
+          • Can drag placed shapes with ✋<br><br>
+          <strong>✋ Moving Shapes:</strong><br>
+          • Use ✋ open hand to drag shapes<br>
+          • Hover over shape to grab it<br>
+          • Move to new position<br>
+          • Release to place<br><br>
+          <strong>💡 Shape Tips:</strong><br>
+          • Start with index finger at desired corner<br>
+          • Drag diagonally for rectangles<br>
+          • Use peace sign quickly after sizing
+        </div>
+      </div>
+      
+      <button class="guide-dropdown-btn" data-guide="text" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;color:var(--text);font-family:'Segoe UI',sans-serif;font-size:.85rem;cursor:pointer;transition:all .15s;text-align:left;display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:1.5rem">📝</span>
+          <div>
+            <div style="font-weight:700">Text Mode Guide</div>
+            <div style="font-size:.65rem;color:var(--muted)">Add and manage text on canvas</div>
+          </div>
+        </div>
+        <span style="font-size:1.2rem;transition:transform .3s">▼</span>
+      </button>
+      
+      <div class="guide-content" id="guide-text" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:-8px">
+        <div style="font-size:.8rem;line-height:1.8;color:var(--text)">
+          <strong>🎨 Activating Text Mode:</strong><br>
+          • Click the TEXT button in toolbar<br>
+          • Text input panel appears<br><br>
+          <strong>⌨️ Adding Text:</strong><br>
+          • Type your text in the input field<br>
+          • Click "+ Add Text" button<br>
+          • Text appears on canvas<br>
+          • Maximum 50 characters per text<br><br>
+          <strong>👆 Positioning Text:</strong><br>
+          • Use ☝️ index finger to position<br>
+          • Click to place text at location<br>
+          • Double-click text to edit/delete<br><br>
+          <strong>✋ Moving Text:</strong><br>
+          • Use ✋ open hand to drag text<br>
+          • Hover over text to grab it<br>
+          • Move to new position<br>
+          • Release to place<br><br>
+          <strong>🗑️ Deleting Text:</strong><br>
+          • Double-click text to show options<br>
+          • Click "Delete Text" button<br>
+          • Or select and use delete option<br><br>
+          <strong>💡 Text Tips:</strong>
+          • Keep text short for readability<br>
+          • Use contrasting colors<br>
+          • Position away from drawings
+        </div>
+      </div>
+      
+      <button class="guide-dropdown-btn" data-guide="tools" style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;color:var(--text);font-family:'Segoe UI',sans-serif;font-size:.85rem;cursor:pointer;transition:all .15s;text-align:left;display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:1.5rem">🛠️</span>
+          <div>
+            <div style="font-weight:700">Canvas & Export Tools</div>
+            <div style="font-size:.65rem;color:var(--muted)">Clear, save, gallery, and export options</div>
+          </div>
+        </div>
+        <span style="font-size:1.2rem;transition:transform .3s">▼</span>
+      </button>
+      
+      <div class="guide-content" id="guide-tools" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:-8px">
+        <div style="font-size:.8rem;line-height:1.8;color:var(--text)">
+          <strong>🧹 Clearing Canvas:</strong><br>
+          • Click the trash icon in toolbar<br>
+          • Entire canvas will be cleared<br>
+          • Cannot undo clear action<br><br>
+          <strong>📏 Adjusting Thickness:</strong><br>
+          • Use + button to increase brush size<br>
+          • Use - button to decrease brush size<br>
+          • Size indicator shows current thickness<br><br>
+          <strong>💾 Saving to Gallery:</strong><br>
+          • Click Save button in sidebar<br>
+          • Artwork saved to local gallery<br>
+          • Access anytime via Gallery button<br><br>
+          <strong>🖼️ Using Gallery:</strong><br>
+          • Click Gallery button in sidebar<br>
+          • View all saved artwork<br>
+          • Select multiple for batch operations<br>
+          • Delete or export selected items<br><br>
+          <strong>📤 Export Options:</strong><br>
+          • <strong>📄 PDF with Text:</strong> Extract text as typable content with image preview<br>
+          • <strong>📊 PowerPoint:</strong> Export as PPTX slideshow presentation<br>
+          • <strong>📦 ZIP Archive:</strong> Download all images as compressed ZIP file<br>
+          • <strong>🖼️ Image:</strong> Export as PNG/JPG image file<br><br>
+          <strong>💡 Tool Tips:</strong><br>
+          • Save frequently to avoid loss<br>
+          • Use export for sharing work<br>
+          • Gallery works offline<br>
+          • Export formats preserve quality
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 

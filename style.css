@@ -1897,3 +1897,28 @@ body {
   width: 1.25rem;
   height: 1.25rem;
 }
+
+/* ─── GUIDE MODAL STYLES ─── */
+.guide-dropdown-btn:hover {
+  background: rgba(147, 51, 234, 0.15);
+  border-color: rgba(147, 51, 234, 0.3);
+}
+
+.guide-dropdown-btn:active {
+  transform: scale(0.98);
+}
+
+.guide-content {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
