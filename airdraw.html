@@ -176,7 +176,7 @@
   <div class="gallery-filter-bar" id="galleryFilterBar">
     <div class="gallery-search-wrap">
       <svg class="gallery-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" id="gallerySearchInput" class="gallery-search-input" placeholder="Search by name, date or time…">
+      <input type="text" id="gallerySearchInput" class="gallery-search-input" placeholder="Search by date or time…">
       <button id="galleryClearSearch" class="gallery-clear-search" title="Clear search" style="display:none;">×</button>
     </div>
     <div class="gallery-date-wrap">
@@ -451,25 +451,6 @@
           • Export formats preserve quality
         </div>
       </div>
-    </div>
-  </div>
-</div>
-
-<!-- ─── SAVE AS MODAL ─── -->
-<div id="saveAsModal" style="position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);z-index:9999;display:none;align-items:center;justify-content:center">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px;max-width:400px;width:90%">
-    <h3 style="font-family:'Segoe UI',sans-serif;font-size:1.3rem;margin-bottom:8px;color:var(--text)">💾 Save Artwork</h3>
-    <p style="font-size:.75rem;color:var(--muted);margin-bottom:20px;font-family:'Segoe UI',sans-serif">Give your artwork a name before saving.</p>
-    <input
-      id="saveAsInput"
-      type="text"
-      maxlength="60"
-      placeholder="e.g. My Masterpiece"
-      style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-family:'Segoe UI',sans-serif;font-size:.9rem;outline:none;transition:border-color .15s"
-    >
-    <div style="display:flex;gap:10px;margin-top:18px">
-      <button id="saveAsConfirmBtn" style="flex:1;background:#9333ea;border:none;border-radius:10px;padding:12px;color:#fff;font-family:'Segoe UI',sans-serif;font-size:.85rem;cursor:pointer;transition:all .15s;font-weight:600">Save</button>
-      <button id="saveAsCancelBtn" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-family:'Segoe UI',sans-serif;font-size:.85rem;cursor:pointer;transition:all .15s">Cancel</button>
     </div>
   </div>
 </div>

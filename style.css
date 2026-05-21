@@ -1441,7 +1441,6 @@ body {
   outline:none; transition:border-color .2s;
 }
 .gallery-search-input:focus { border-color:#9333ea; }
-#saveAsInput:focus { border-color:#9333ea; box-shadow:0 0 0 2px rgba(147,51,234,.25); }
 .gallery-search-input::placeholder { color:var(--muted); }
 .gallery-clear-search {
   position:absolute; right:8px; background:transparent; border:none;
