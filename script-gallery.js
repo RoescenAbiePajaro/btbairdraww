@@ -7,12 +7,86 @@ document.getElementById('clearBtn').addEventListener('click', clearCanvas);
 document.getElementById('galleryBtn').addEventListener('click', () => showScreen('gallery'));
 document.getElementById('backBtn').addEventListener('click', () => showScreen('main'));
 
+// ─── GALLERY FILTER STATE ───────────────────────────────
+const galleryFilter = { search: '', dateFrom: '', dateTo: '' };
+
+// Returns items from state.gallery that match current filter
+function getFilteredGallery() {
+  const { search, dateFrom, dateTo } = galleryFilter;
+  const q = search.trim().toLowerCase();
+  const from = dateFrom ? new Date(dateFrom + 'T00:00:00') : null;
+  const to   = dateTo   ? new Date(dateTo   + 'T23:59:59') : null;
+
+  return state.gallery.filter(item => {
+    // Text search against timestamp string
+    if (q && !(item.timestamp || '').toLowerCase().includes(q)) return false;
+
+    // Date range filter — parse the saved timestamp
+    if (from || to) {
+      const saved = item.timestamp ? new Date(item.timestamp) : null;
+      if (!saved || isNaN(saved)) return true; // can't parse, keep it
+      if (from && saved < from) return false;
+      if (to   && saved > to)   return false;
+    }
+    return true;
+  });
+}
+
+// Wire up filter controls once DOM is ready
+(function initGalleryFilters() {
+  const searchInput   = document.getElementById('gallerySearchInput');
+  const clearSearch   = document.getElementById('galleryClearSearch');
+  const dateFrom      = document.getElementById('galleryDateFrom');
+  const dateTo        = document.getElementById('galleryDateTo');
+  const resetBtn      = document.getElementById('galleryResetFilter');
+
+  searchInput.addEventListener('input', () => {
+    galleryFilter.search = searchInput.value;
+    clearSearch.style.display = searchInput.value ? 'block' : 'none';
+    state.galleryCurrentPage = 1;
+    renderGallery();
+  });
+
+  clearSearch.addEventListener('click', () => {
+    searchInput.value = '';
+    galleryFilter.search = '';
+    clearSearch.style.display = 'none';
+    state.galleryCurrentPage = 1;
+    renderGallery();
+  });
+
+  dateFrom.addEventListener('change', () => {
+    galleryFilter.dateFrom = dateFrom.value;
+    state.galleryCurrentPage = 1;
+    renderGallery();
+  });
+
+  dateTo.addEventListener('change', () => {
+    galleryFilter.dateTo = dateTo.value;
+    state.galleryCurrentPage = 1;
+    renderGallery();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    dateFrom.value = '';
+    dateTo.value = '';
+    clearSearch.style.display = 'none';
+    galleryFilter.search = '';
+    galleryFilter.dateFrom = '';
+    galleryFilter.dateTo = '';
+    state.galleryCurrentPage = 1;
+    renderGallery();
+  });
+})();
+
 // Select all checkbox
 selectAllCheckbox.addEventListener('change', (e) => {
+  const filtered = getFilteredGallery();
   if (e.target.checked) {
-    state.gallery.forEach(item => state.selectedGalleryItems.add(item.id));
+    filtered.forEach(item => state.selectedGalleryItems.add(item.id));
   } else {
-    state.selectedGalleryItems.clear();
+    filtered.forEach(item => state.selectedGalleryItems.delete(item.id));
   }
   renderGallery();
 });
@@ -90,7 +164,7 @@ prevPageBtn.addEventListener('click', () => {
 });
 
 nextPageBtn.addEventListener('click', () => {
-  const totalPages = Math.ceil(state.gallery.length / state.galleryItemsPerPage);
+  const totalPages = Math.ceil(getFilteredGallery().length / state.galleryItemsPerPage);
   if (state.galleryCurrentPage < totalPages) {
     state.galleryCurrentPage++;
     renderGallery();
@@ -218,18 +292,38 @@ async function saveArtwork() {
 }
 
 function renderGallery() {
+  const filtered = getFilteredGallery();
+  const filterCount = document.getElementById('galleryFilterCount');
+  const isFiltered = galleryFilter.search || galleryFilter.dateFrom || galleryFilter.dateTo;
+
   if (state.gallery.length === 0) {
     galleryGrid.innerHTML = '<div class="gallery-empty">No artwork saved yet.<br>Draw something and hit 💾</div>';
+    exportBtn.classList.remove('visible');
+    paginationContainer.style.display = 'none';
+    filterCount.style.display = 'none';
+    return;
+  }
+
+  // Show filter result count when a filter is active
+  if (isFiltered) {
+    filterCount.style.display = 'block';
+    filterCount.textContent = `Showing ${filtered.length} of ${state.gallery.length} artwork${state.gallery.length !== 1 ? 's' : ''}`;
+  } else {
+    filterCount.style.display = 'none';
+  }
+
+  if (filtered.length === 0) {
+    galleryGrid.innerHTML = '<div class="gallery-empty">No artwork matches your search.<br>Try different keywords or dates.</div>';
     exportBtn.classList.remove('visible');
     paginationContainer.style.display = 'none';
     return;
   }
 
-  // Calculate pagination
-  const totalPages = Math.ceil(state.gallery.length / state.galleryItemsPerPage);
+  // Calculate pagination on filtered set
+  const totalPages = Math.ceil(filtered.length / state.galleryItemsPerPage);
   const startIndex = (state.galleryCurrentPage - 1) * state.galleryItemsPerPage;
   const endIndex = startIndex + state.galleryItemsPerPage;
-  const paginatedItems = state.gallery.slice(startIndex, endIndex);
+  const paginatedItems = filtered.slice(startIndex, endIndex);
 
   galleryGrid.innerHTML = '';
   paginatedItems.forEach(item => {
@@ -344,11 +438,12 @@ function updateExportButton() {
 }
 
 function updateSelectAllCheckbox() {
-  if (state.gallery.length === 0) {
+  const filtered = getFilteredGallery();
+  if (filtered.length === 0) {
     selectAllCheckbox.checked = false;
     return;
   }
-  const allSelected = state.gallery.every(item => state.selectedGalleryItems.has(item.id));
+  const allSelected = filtered.every(item => state.selectedGalleryItems.has(item.id));
   selectAllCheckbox.checked = allSelected && state.selectedGalleryItems.size > 0;
 }
 

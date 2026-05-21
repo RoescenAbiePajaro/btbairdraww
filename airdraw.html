@@ -172,6 +172,23 @@
       </button>
     </div>
   </div>
+  <!-- Search & Filter Bar -->
+  <div class="gallery-filter-bar" id="galleryFilterBar">
+    <div class="gallery-search-wrap">
+      <svg class="gallery-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="gallerySearchInput" class="gallery-search-input" placeholder="Search by date or time…">
+      <button id="galleryClearSearch" class="gallery-clear-search" title="Clear search" style="display:none;">×</button>
+    </div>
+    <div class="gallery-date-wrap">
+      <label class="gallery-date-label">From</label>
+      <input type="date" id="galleryDateFrom" class="gallery-date-input">
+      <label class="gallery-date-label">To</label>
+      <input type="date" id="galleryDateTo" class="gallery-date-input">
+      <button id="galleryResetFilter" class="gallery-reset-btn" title="Reset filters">↺ Reset</button>
+    </div>
+  </div>
+  <div id="galleryFilterCount" class="gallery-filter-count" style="display:none;"></div>
+
   <div class="gallery-grid" id="galleryGrid">
     <div class="gallery-empty">No artwork saved yet.<br>Draw something and hit 💾</div>
   </div>
