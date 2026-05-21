@@ -173,6 +173,31 @@ async function deleteArtworkFromServer(artworkId) {
   }
 }
 
+// Rename artwork in user's gallery
+async function renameArtworkOnServer(artworkId, newName) {
+  try {
+    const response = await authenticatedFetch(`https://btbairdraww.onrender.com/api/gallery/${artworkId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name: newName })
+    });
+
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      throw new Error(`Server error (${response.status}). The backend may need to be redeployed.`);
+    }
+
+    const data = await response.json();
+    if (!response.ok) {
+      showToast('Failed to rename: ' + data.error);
+      throw new Error(data.error);
+    }
+    return data;
+  } catch (error) {
+    console.error('Error renaming artwork:', error);
+    throw error;
+  }
+}
+
 // Make functions globally available
 window.currentUser = currentUser;
 window.authToken = authToken;
@@ -180,4 +205,5 @@ window.logout = logout;
 window.loadUserGallery = loadUserGallery;
 window.saveArtworkToServer = saveArtworkToServer;
 window.deleteArtworkFromServer = deleteArtworkFromServer;
+window.renameArtworkOnServer = renameArtworkOnServer;
 window.authenticatedFetch = authenticatedFetch;

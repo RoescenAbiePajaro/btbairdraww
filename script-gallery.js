@@ -382,6 +382,7 @@ function renderGallery() {
       <div class="gallery-actions">
         <button class="view-btn" data-id="${item.id}">👁View</button>
         <button class="load-btn" data-id="${item.id}">📂Load</button>
+        <button class="rename-btn" data-id="${item.id}" data-name="${(item.name || 'Untitled').replace(/"/g,'&quot;')}">✏️Rename</button>
         <button class="dl-btn" data-id="${item.id}" data-type="png">PNG</button>
       </div>
     `;
@@ -419,6 +420,14 @@ function renderGallery() {
       const type = btn.dataset.type;
       const item = state.gallery.find(g => g.id === id);
       if (item) downloadItem(item, type);
+    });
+  });
+
+  galleryGrid.querySelectorAll('.rename-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.dataset.id);
+      const currentName = btn.dataset.name || 'Untitled';
+      openRenameModal(id, currentName);
     });
   });
 
@@ -1254,4 +1263,51 @@ document.getElementById('gestureHintModal').addEventListener('click', (e) => {
   if (e.target.id === 'gestureHintModal') {
     e.target.style.display = 'none';
   }
+});
+
+// ─── RENAME MODAL ────────────────────────────────────────
+function openRenameModal(id, currentName) {
+  const modal = document.getElementById('renameModal');
+  const input = document.getElementById('renameInput');
+  input.value = currentName;
+  modal.style.display = 'flex';
+  setTimeout(() => { input.focus(); input.select(); }, 50);
+
+  // Store the target id on the modal for the confirm handler
+  modal.dataset.targetId = id;
+}
+
+document.getElementById('renameConfirmBtn').addEventListener('click', async () => {
+  const modal = document.getElementById('renameModal');
+  const input = document.getElementById('renameInput');
+  const id = parseInt(modal.dataset.targetId);
+  const newName = input.value.trim();
+  if (!newName) return;
+
+  modal.style.display = 'none';
+
+  try {
+    showLoading('Renaming…');
+    await renameArtworkOnServer(id, newName);
+
+    // Update local state
+    const item = state.gallery.find(g => g.id === id);
+    if (item) item.name = newName;
+
+    renderGallery();
+    hideLoading();
+    showToast('Artwork renamed!');
+  } catch (error) {
+    hideLoading();
+    showToast('Rename failed: ' + error.message);
+  }
+});
+
+document.getElementById('renameCancelBtn').addEventListener('click', () => {
+  document.getElementById('renameModal').style.display = 'none';
+});
+
+document.getElementById('renameInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('renameConfirmBtn').click();
+  if (e.key === 'Escape') document.getElementById('renameCancelBtn').click();
 });

@@ -476,6 +476,27 @@
   </div>
 </div>
 
+<!-- ─── RENAME MODAL ─── -->
+<div id="renameModal" style="position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(10px);z-index:9999;display:none;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px;max-width:400px;width:90%">
+    <h3 style="font-family:'Segoe UI',sans-serif;font-size:1.3rem;margin-bottom:8px;color:var(--text)">✏️ Rename Artwork</h3>
+    <p style="font-size:.75rem;color:var(--muted);margin-bottom:20px;font-family:'Segoe UI',sans-serif">Enter a new name for this artwork.</p>
+    <input id="renameInput" type="text" maxlength="60" placeholder="e.g. My Masterpiece"
+      style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-family:'Segoe UI',sans-serif;font-size:.9rem;outline:none;transition:border .15s"
+      onfocus="this.style.borderColor='#9333ea'" onblur="this.style.borderColor='var(--border)'">
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button id="renameConfirmBtn"
+        style="flex:1;background:#9333ea;border:none;border-radius:10px;padding:12px;color:#fff;font-family:'Segoe UI',sans-serif;font-size:.85rem;cursor:pointer;transition:all .15s;font-weight:600">
+        Rename
+      </button>
+      <button id="renameCancelBtn"
+        style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-family:'Segoe UI',sans-serif;font-size:.85rem;cursor:pointer;transition:all .15s">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ─── IMAGE PREVIEW MODAL ─── -->
 <div id="previewModal" style="position:fixed;inset:0;background:rgba(0,0,0,.9);backdrop-filter:blur(10px);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column">
   <button id="closePreviewBtn" style="position:absolute;top:20px;right:20px;background:rgba(255,255,255,.2);border:none;border-radius:50%;width:40px;height:40px;color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s">×</button>
