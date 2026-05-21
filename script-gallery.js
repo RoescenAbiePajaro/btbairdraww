@@ -2,7 +2,40 @@
 // ═══════════════════════════════════════════════════════
 // SAVE / GALLERY
 // ═══════════════════════════════════════════════════════
-document.getElementById('saveBtn').addEventListener('click', saveArtwork);
+// ─── SAVE AS MODAL ──────────────────────────────────────
+const saveAsModal    = document.getElementById('saveAsModal');
+const saveAsInput    = document.getElementById('saveAsInput');
+const saveAsConfirm  = document.getElementById('saveAsConfirmBtn');
+const saveAsCancel   = document.getElementById('saveAsCancelBtn');
+
+document.getElementById('saveBtn').addEventListener('click', () => {
+  // Pre-fill with a default name based on current date/time
+  const now = new Date();
+  saveAsInput.value = `Artwork ${now.toLocaleDateString()} ${now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+  saveAsModal.style.display = 'flex';
+  setTimeout(() => { saveAsInput.focus(); saveAsInput.select(); }, 50);
+});
+
+saveAsCancel.addEventListener('click', () => {
+  saveAsModal.style.display = 'none';
+});
+
+// Close on backdrop click
+saveAsModal.addEventListener('click', (e) => {
+  if (e.target === saveAsModal) saveAsModal.style.display = 'none';
+});
+
+// Confirm via Enter key
+saveAsInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') saveAsConfirm.click();
+  if (e.key === 'Escape') saveAsCancel.click();
+});
+
+saveAsConfirm.addEventListener('click', () => {
+  const name = saveAsInput.value.trim() || 'Untitled';
+  saveAsModal.style.display = 'none';
+  saveArtwork(name);
+});
 document.getElementById('clearBtn').addEventListener('click', clearCanvas);
 document.getElementById('galleryBtn').addEventListener('click', () => showScreen('gallery'));
 document.getElementById('backBtn').addEventListener('click', () => showScreen('main'));
@@ -18,8 +51,8 @@ function getFilteredGallery() {
   const to   = dateTo   ? new Date(dateTo   + 'T23:59:59') : null;
 
   return state.gallery.filter(item => {
-    // Text search against timestamp string
-    if (q && !(item.timestamp || '').toLowerCase().includes(q)) return false;
+    // Text search against filename and timestamp string
+    if (q && !(item.name || '').toLowerCase().includes(q) && !(item.timestamp || '').toLowerCase().includes(q)) return false;
 
     // Date range filter — parse the saved timestamp
     if (from || to) {
@@ -186,7 +219,7 @@ function clearCanvas() {
   showToast('Canvas cleared');
 }
 
-async function saveArtwork() {
+async function saveArtwork(filename) {
   // Flash
   saveFlash.style.opacity = '1';
   setTimeout(() => saveFlash.style.opacity = '0', 200);
@@ -243,6 +276,7 @@ async function saveArtwork() {
 
   const dataURL = offscreen.toDataURL('image/png');
   const ts = new Date().toLocaleString();
+  const artworkName = (filename && filename.trim()) ? filename.trim() : 'Untitled';
   
   // Save full state for loading back
   const drawingData = drawCanvas.toDataURL();
@@ -269,6 +303,7 @@ async function saveArtwork() {
     const savedArtwork = await saveArtworkToServer({
       dataURL,
       timestamp: ts,
+      name: artworkName,
       drawingData,
       textItemsData,
       shapeItemsData
@@ -277,7 +312,8 @@ async function saveArtwork() {
     // Add to local state
     state.gallery.unshift({ 
       dataURL, 
-      timestamp: ts, 
+      timestamp: ts,
+      name: artworkName,
       id: savedArtwork.id,
       drawingData,
       textItemsData,
@@ -285,6 +321,7 @@ async function saveArtwork() {
     });
     
     renderGallery();
+    showToast(`"${artworkName}" saved to gallery ✓`);
   } catch (error) {
     console.error('Failed to save artwork:', error);
     showToast('Failed to save artwork: ' + error.message);
@@ -344,7 +381,8 @@ function renderGallery() {
       <input type="checkbox" class="card-checkbox" data-id="${item.id}" ${state.selectedGalleryItems.has(item.id) ? 'checked' : ''}>
       <img class="gallery-thumb" src="${item.dataURL}" alt="Artwork" data-id="${item.id}" onerror="this.style.display='none';this.parentElement.querySelector('.error-placeholder').style.display='block';">
       <div class="error-placeholder" style="display:none;padding:20px;text-align:center;color:var(--muted);font-size:0.7rem;">Image unavailable</div>
-      <div class="gallery-timestamp" style="font-size:0.65rem;color:var(--muted);padding:4px 8px;text-align:center;">${item.timestamp || ''}</div>
+      <div class="gallery-filename" style="font-size:0.75rem;font-weight:600;color:var(--text);padding:6px 8px 0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${(item.name || 'Untitled').replace(/"/g,'&quot;')}">${item.name || 'Untitled'}</div>
+      <div class="gallery-timestamp" style="font-size:0.65rem;color:var(--muted);padding:2px 8px 4px;text-align:center;">${item.timestamp || ''}</div>
       <div class="gallery-actions">
         <button class="view-btn" data-id="${item.id}">👁View</button>
         <button class="load-btn" data-id="${item.id}">📂Load</button>
