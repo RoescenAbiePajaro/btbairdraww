@@ -154,7 +154,13 @@ END;
 $$;
 
 -- ═══════════════════════════════════════════════════════
--- STEP 7: REFRESH PostgREST SCHEMA CACHE
+-- STEP 7: ADD name COLUMN (migration — safe to run on existing table)
+-- ═══════════════════════════════════════════════════════
+
+ALTER TABLE gallery ADD COLUMN IF NOT EXISTS name TEXT DEFAULT 'Untitled';
+
+-- ═══════════════════════════════════════════════════════
+-- STEP 8: REFRESH PostgREST SCHEMA CACHE
 -- ═══════════════════════════════════════════════════════
 
 NOTIFY pgrst, 'reload schema';

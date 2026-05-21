@@ -54,21 +54,7 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
-// Rename artwork in gallery
-router.patch('/:id', authenticateToken, async (req, res) => {
-  try {
-    const { name } = req.body;
-    if (!name || !name.trim()) {
-      return res.status(400).json({ error: 'Name is required' });
-    }
-    const result = await supabaseService.renameGalleryItem(req.user.id, req.params.id, name.trim());
-    if (!result) return res.status(404).json({ error: 'Artwork not found' });
-    res.json(result);
-  } catch (error) {
-    console.error('Rename error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+
 
 // Delete artwork from gallery
 router.delete('/:id', authenticateToken, async (req, res) => {

@@ -396,23 +396,7 @@ class SupabaseService {
     }
   }
 
-  async renameGalleryItem(userId, galleryId, newName) {
-    try {
-      const { data, error } = await supabase
-        .from('gallery')
-        .update({ name: newName })
-        .eq('user_id', userId)
-        .eq('id', galleryId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error renaming gallery item:', error);
-      throw error;
-    }
-  }
+  
 
   async deleteFromGallery(userId, galleryId) {
     try {

@@ -382,7 +382,6 @@ function renderGallery() {
       <div class="gallery-actions">
         <button class="view-btn" data-id="${item.id}">👁View</button>
         <button class="load-btn" data-id="${item.id}">📂Load</button>
-        <button class="rename-btn" data-id="${item.id}" data-name="${(item.name || 'Untitled').replace(/"/g,'&quot;')}">✏️Rename</button>
         <button class="dl-btn" data-id="${item.id}" data-type="png">PNG</button>
       </div>
     `;
