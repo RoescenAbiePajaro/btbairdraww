@@ -33,6 +33,58 @@ saveAsConfirm.addEventListener('click', () => {
   saveAsModal.style.display = 'none';
   saveArtwork(name);
 });
+
+// ─── RENAME MODAL ───────────────────────────────────────
+const renameModal    = document.getElementById('renameModal');
+const renameInput    = document.getElementById('renameInput');
+const renameConfirm  = document.getElementById('renameConfirmBtn');
+const renameCancel   = document.getElementById('renameCancelBtn');
+let currentRenameId = null;
+
+function openRenameModal(id, currentName) {
+  currentRenameId = id;
+  renameInput.value = currentName;
+  renameModal.style.display = 'flex';
+  setTimeout(() => { renameInput.focus(); renameInput.select(); }, 50);
+}
+
+renameCancel.addEventListener('click', () => {
+  renameModal.style.display = 'none';
+  currentRenameId = null;
+});
+
+renameInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') renameConfirm.click();
+  if (e.key === 'Escape') renameCancel.click();
+});
+
+renameConfirm.addEventListener('click', async () => {
+  if (!currentRenameId) return;
+  
+  const newName = renameInput.value.trim() || 'Untitled';
+  renameModal.style.display = 'none';
+  
+  try {
+    showLoading('Renaming artwork…');
+    await renameArtworkOnServer(currentRenameId, newName);
+    
+    // Update local state
+    const item = state.gallery.find(g => g.id === currentRenameId);
+    if (item) {
+      item.name = newName;
+      renderGallery();
+    }
+    
+    showToast('Artwork renamed! ✓');
+  } catch (error) {
+    console.error('Failed to rename:', error);
+    showToast('Failed to rename: ' + error.message);
+  } finally {
+    hideLoading();
+    currentRenameId = null;
+  }
+});
+
 document.getElementById('clearBtn').addEventListener('click', clearCanvas);
 document.getElementById('galleryBtn').addEventListener('click', () => showScreen('gallery'));
 document.getElementById('backBtn').addEventListener('click', () => showScreen('main'));
@@ -377,7 +429,10 @@ function renderGallery() {
       <input type="checkbox" class="card-checkbox" data-id="${item.id}" ${state.selectedGalleryItems.has(item.id) ? 'checked' : ''}>
       <img class="gallery-thumb" src="${item.dataURL}" alt="Artwork" data-id="${item.id}" onerror="this.style.display='none';this.parentElement.querySelector('.error-placeholder').style.display='block';">
       <div class="error-placeholder" style="display:none;padding:20px;text-align:center;color:var(--muted);font-size:0.7rem;">Image unavailable</div>
-      <div style="padding:6px 8px 2px;font-size:0.75rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${(item.name || 'Untitled').replace(/"/g,'&quot;')}">${item.name || 'Untitled'}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 8px 2px;font-size:0.75rem;font-weight:700;color:var(--text);">
+        <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;" title="${(item.name || 'Untitled').replace(/"/g,'&quot;')}">${item.name || 'Untitled'}</div>
+        <button class="rename-btn" data-id="${item.id}" data-name="${(item.name || 'Untitled').replace(/"/g,'&quot;')}" style="background:none;border:none;color:var(--text);cursor:pointer;padding:0;font-size:0.8rem;opacity:0.7;transition:opacity 0.15s;flex-shrink:0;">✏️</button>
+      </div>
       <div class="gallery-timestamp" style="font-size:0.65rem;color:var(--muted);padding:2px 8px 4px;text-align:left;">${item.timestamp || ''}</div>
       <div class="gallery-actions">
         <button class="view-btn" data-id="${item.id}">👁View</button>
