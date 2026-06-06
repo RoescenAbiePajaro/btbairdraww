@@ -178,48 +178,74 @@ exportBtn.addEventListener('click', () => {
   exportModal.style.display = 'flex';
 });
 
+// ─── DELETE CONFIRM MODAL ──────────────────────────────
+const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+const deleteConfirmBtn = document.getElementById('deleteConfirmBtn');
+const deleteConfirmCancelBtn = document.getElementById('deleteConfirmCancelBtn');
+const deleteConfirmMessage = document.getElementById('deleteConfirmMessage');
+let pendingDeleteItems = null;
+
+function openDeleteConfirmModal(itemsToDelete) {
+  pendingDeleteItems = itemsToDelete;
+  const count = itemsToDelete.length;
+  deleteConfirmMessage.textContent = `Are you sure you want to delete ${count} artwork${count > 1 ? 's' : ''}?`;
+  deleteConfirmModal.style.display = 'flex';
+}
+
+deleteConfirmCancelBtn.addEventListener('click', () => {
+  deleteConfirmModal.style.display = 'none';
+  pendingDeleteItems = null;
+});
+
+deleteConfirmBtn.addEventListener('click', async () => {
+  if (!pendingDeleteItems) return;
+  
+  const selectedItems = pendingDeleteItems;
+  deleteConfirmModal.style.display = 'none';
+  pendingDeleteItems = null;
+  
+  showLoading('Deleting artwork...');
+  
+  try {
+    // Delete from server one by one for better error handling
+    for (const id of selectedItems) {
+      const numericId = parseInt(id);
+      console.log('Deleting artwork ID:', numericId, '(original:', id, ')');
+      
+      if (!isNaN(numericId)) {
+        await deleteArtworkFromServer(numericId);
+      } else {
+        console.error('Invalid ID format:', id);
+      }
+    }
+    
+    // Remove from local state
+    state.gallery = state.gallery.filter(item => !state.selectedGalleryItems.has(item.id));
+    state.selectedGalleryItems.clear();
+    
+    // Reset to page 1 if current page is now empty
+    const totalPages = Math.ceil(state.gallery.length / state.galleryItemsPerPage);
+    if (state.galleryCurrentPage > totalPages && totalPages > 0) {
+      state.galleryCurrentPage = 1;
+    }
+    
+    renderGallery();
+    hideLoading();
+    showToast(`Deleted ${selectedItems.length} artwork${selectedItems.length > 1 ? 's' : ''}`);
+  } catch (error) {
+    console.error('Error deleting artwork:', error);
+    hideLoading();
+    showToast('Error deleting artwork: ' + error.message);
+  }
+});
+
 // Delete button
-deleteBtn.addEventListener('click', async () => {
+deleteBtn.addEventListener('click', () => {
   const selectedItems = Array.from(state.selectedGalleryItems);
   if (selectedItems.length === 0) return;
   
   console.log('Deleting items:', selectedItems);
-  
-  if (confirm(`Are you sure you want to delete ${selectedItems.length} artwork${selectedItems.length > 1 ? 's' : ''}?`)) {
-    showLoading('Deleting artwork...');
-    
-    try {
-      // Delete from server one by one for better error handling
-      for (const id of selectedItems) {
-        const numericId = parseInt(id);
-        console.log('Deleting artwork ID:', numericId, '(original:', id, ')');
-        
-        if (!isNaN(numericId)) {
-          await deleteArtworkFromServer(numericId);
-        } else {
-          console.error('Invalid ID format:', id);
-        }
-      }
-      
-      // Remove from local state
-      state.gallery = state.gallery.filter(item => !state.selectedGalleryItems.has(item.id));
-      state.selectedGalleryItems.clear();
-      
-      // Reset to page 1 if current page is now empty
-      const totalPages = Math.ceil(state.gallery.length / state.galleryItemsPerPage);
-      if (state.galleryCurrentPage > totalPages && totalPages > 0) {
-        state.galleryCurrentPage = 1;
-      }
-      
-      renderGallery();
-      hideLoading();
-      showToast(`Deleted ${selectedItems.length} artwork${selectedItems.length > 1 ? 's' : ''}`);
-    } catch (error) {
-      console.error('Error deleting artwork:', error);
-      hideLoading();
-      showToast('Error deleting artwork: ' + error.message);
-    }
-  }
+  openDeleteConfirmModal(selectedItems);
 });
 
 // Cancel export
