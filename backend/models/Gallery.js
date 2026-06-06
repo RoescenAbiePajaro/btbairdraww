@@ -6,7 +6,6 @@ const gallerySchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   dataURL: { type: String, required: true },
   timestamp: { type: String, required: true },
-  name: { type: String, default: 'Untitled' },
   id: { type: Number, required: true },
   drawingData: String,
   textItemsData: [{
