@@ -310,7 +310,7 @@ class SupabaseService {
   }
 
   // Gallery database operations using Supabase
-  async saveToGallery(userId, dataURL, timestamp, drawingData, textItemsData, shapeItemsData) {
+  async saveToGallery(userId, dataURL, timestamp, name, drawingData, textItemsData, shapeItemsData) {
     try {
       // Try to upload image to Supabase Storage first
       console.log('Attempting to upload image to storage...');
@@ -319,12 +319,12 @@ class SupabaseService {
         
         // Save to database with storage URL
         console.log('Saving to database with storage URL...');
-        return await this.saveToGalleryREST(userId, storageResult.publicUrl, timestamp, drawingData, textItemsData, shapeItemsData);
+        return await this.saveToGalleryREST(userId, storageResult.publicUrl, timestamp, name, drawingData, textItemsData, shapeItemsData);
       } catch (storageError) {
         console.warn('Storage upload failed, falling back to base64:', storageError.message);
         console.log('Saving to database with base64 dataURL...');
         // Fallback: save base64 directly to database
-        return await this.saveToGalleryREST(userId, dataURL, timestamp, drawingData, textItemsData, shapeItemsData);
+        return await this.saveToGalleryREST(userId, dataURL, timestamp, name, drawingData, textItemsData, shapeItemsData);
       }
     } catch (error) {
       console.error('Error saving to gallery:', error);
@@ -333,12 +333,13 @@ class SupabaseService {
   }
 
   // Fallback method using raw SQL
-  async saveToGalleryRawSQL(userId, dataURL, timestamp, drawingData, textItemsData, shapeItemsData) {
+  async saveToGalleryRawSQL(userId, dataURL, timestamp, name, drawingData, textItemsData, shapeItemsData) {
     try {
       const { data, error } = await supabase.rpc('save_gallery_item', {
         p_user_id: userId,
         p_dataurl: dataURL,
         p_timestamp: timestamp,
+        p_name: name,
         p_drawingdata: drawingData,
         p_textitemsdata: textItemsData,
         p_shapeitemsdata: shapeItemsData
@@ -347,7 +348,7 @@ class SupabaseService {
       if (error) {
         console.error('Raw SQL also failed, trying direct REST API:', error.message);
         // Final fallback: Direct REST API call
-        return await this.saveToGalleryREST(userId, dataURL, timestamp, drawingData, textItemsData, shapeItemsData);
+        return await this.saveToGalleryREST(userId, dataURL, timestamp, name, drawingData, textItemsData, shapeItemsData);
       }
 
       return data;
@@ -358,13 +359,14 @@ class SupabaseService {
   }
 
   // Final fallback using direct PostgreSQL query
-  async saveToGalleryREST(userId, dataURL, timestamp, drawingData, textItemsData, shapeItemsData) {
+  async saveToGalleryREST(userId, dataURL, timestamp, name, drawingData, textItemsData, shapeItemsData) {
     try {
       // Use the original save_gallery_item function with proper parameter names
       const { data, error } = await supabase.rpc('save_gallery_item', {
         p_user_id: userId,
         p_dataurl: dataURL,
         p_timestamp: timestamp,
+        p_name: name,
         p_drawingdata: drawingData,
         p_textitemsdata: textItemsData,
         p_shapeitemsdata: shapeItemsData
@@ -446,6 +448,24 @@ class SupabaseService {
       return data;
     } catch (error) {
       console.error('Error deleting from gallery:', error);
+      throw error;
+    }
+  }
+
+  async updateGalleryItem(userId, galleryId, updates) {
+    try {
+      const { data, error } = await supabase
+        .from('gallery')
+        .update(updates)
+        .eq('user_id', userId)
+        .eq('id', galleryId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating gallery item:', error);
       throw error;
     }
   }

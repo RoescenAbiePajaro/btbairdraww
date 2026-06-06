@@ -55,6 +55,7 @@ CREATE TABLE gallery (
   user_id       TEXT NOT NULL,
   dataURL       TEXT NOT NULL,
   "timestamp"   TEXT NOT NULL,
+  name          TEXT DEFAULT 'Untitled',
   drawingData   TEXT,
   textItemsData JSONB DEFAULT '[]',
   shapeItemsData JSONB DEFAULT '[]',
@@ -113,6 +114,7 @@ CREATE OR REPLACE FUNCTION save_gallery_item(
   p_user_id       TEXT,
   p_dataurl       TEXT,
   p_timestamp     TEXT,
+  p_name          TEXT DEFAULT 'Untitled',
   p_drawingdata   TEXT    DEFAULT NULL,
   p_textitemsdata  JSONB  DEFAULT '[]',
   p_shapeitemsdata JSONB  DEFAULT '[]'
@@ -122,6 +124,7 @@ RETURNS TABLE (
   user_id        TEXT,
   dataURL        TEXT,
   "timestamp"    TEXT,
+  name           TEXT,
   drawingData    TEXT,
   textItemsData  JSONB,
   shapeItemsData JSONB,
@@ -137,6 +140,7 @@ BEGIN
     user_id,
     dataURL,
     "timestamp",
+    name,
     drawingData,
     textItemsData,
     shapeItemsData
@@ -145,6 +149,7 @@ BEGIN
     p_user_id,
     p_dataurl,
     p_timestamp,
+    p_name,
     p_drawingdata,
     p_textitemsdata,
     p_shapeitemsdata

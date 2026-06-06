@@ -37,12 +37,13 @@ router.get('/', authenticateToken, async (req, res) => {
 // Save artwork to gallery
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { dataURL, timestamp, drawingData, textItemsData, shapeItemsData } = req.body;
+    const { dataURL, timestamp, name, drawingData, textItemsData, shapeItemsData } = req.body;
     
     const galleryItem = await supabaseService.saveToGallery(
       req.user.id,
       dataURL,
       timestamp,
+      name,
       drawingData,
       textItemsData,
       shapeItemsData
@@ -74,6 +75,28 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     res.json({ message: 'Artwork deleted successfully' });
   } catch (error) {
     console.error('Delete error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update artwork (rename)
+router.patch('/:id', authenticateToken, async (req, res) => {
+  try {
+    const { name } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({ error: 'Name is required' });
+    }
+    
+    const result = await supabaseService.updateGalleryItem(req.user.id, req.params.id, { name });
+    
+    if (!result) {
+      return res.status(404).json({ error: 'Artwork not found' });
+    }
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Update error:', error);
     res.status(500).json({ error: error.message });
   }
 });
