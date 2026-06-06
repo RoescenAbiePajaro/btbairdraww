@@ -454,17 +454,6 @@ class SupabaseService {
 
   async updateGalleryItem(userId, galleryId, updates) {
     try {
-      // If dataURL is being updated and it's base64, try to upload to storage
-      if (updates.dataURL && updates.dataURL.startsWith('data:image')) {
-        try {
-          console.log('Attempting to upload updated image to storage...');
-          const storageResult = await this.uploadImageToStorage(updates.dataURL, userId);
-          updates.dataURL = storageResult.publicUrl;
-        } catch (storageError) {
-          console.warn('Storage upload failed for update, keeping base64:', storageError.message);
-        }
-      }
-
       const { data, error } = await supabase
         .from('gallery')
         .update(updates)

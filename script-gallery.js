@@ -3,10 +3,7 @@
 // SAVE / GALLERY
 // ═══════════════════════════════════════════════════════
 document.getElementById('saveBtn').addEventListener('click', openSaveAsModal);
-document.getElementById('overwriteBtn').addEventListener('click', () => {
-  state.isOverwriting = true;
-  showScreen('gallery');
-});
+
 
 // ─── SAVE AS MODAL ───────────────────────────────────────
 const saveAsModal    = document.getElementById('saveAsModal');

@@ -101,29 +101,5 @@ router.patch('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Update artwork (full update)
-router.put('/:id', authenticateToken, async (req, res) => {
-  try {
-    const { dataURL, timestamp, name, drawingData, textItemsData, shapeItemsData } = req.body;
-    
-    const result = await supabaseService.updateGalleryItem(req.user.id, req.params.id, {
-      dataURL,
-      timestamp,
-      name,
-      drawingData,
-      textItemsData,
-      shapeItemsData
-    });
-    
-    if (!result) {
-      return res.status(404).json({ error: 'Artwork not found' });
-    }
-    
-    res.json(result);
-  } catch (error) {
-    console.error('Full update error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
 
 export default router;
