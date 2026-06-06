@@ -439,6 +439,7 @@ function renderGallery() {
         const previewImage = document.getElementById('previewImage');
         const previewTimestamp = document.getElementById('previewTimestamp');
         previewImage.src = item.dataURL;
+        document.getElementById('previewName').textContent = item.name || 'Untitled';
         previewTimestamp.textContent = item.timestamp || '';
         previewModal.style.display = 'flex';
       }
