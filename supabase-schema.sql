@@ -115,7 +115,7 @@ CREATE OR REPLACE FUNCTION save_gallery_item(
   p_timestamp     TEXT,
   p_drawingdata   TEXT    DEFAULT NULL,
   p_textitemsdata  JSONB  DEFAULT '[]',
-  p_shapeitemsdata JSONB  DEFAULT '[]',
+  p_shapeitemsdata JSONB  DEFAULT '[]'
 )
 RETURNS TABLE (
   id             BIGINT,
@@ -139,7 +139,7 @@ BEGIN
     "timestamp",
     drawingData,
     textItemsData,
-    shapeItemsData,
+    shapeItemsData
   )
   VALUES (
     p_user_id,
@@ -147,7 +147,7 @@ BEGIN
     p_timestamp,
     p_drawingdata,
     p_textitemsdata,
-    p_shapeitemsdata,
+    p_shapeitemsdata
   )
   RETURNING *;
 END;

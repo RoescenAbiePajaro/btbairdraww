@@ -37,7 +37,7 @@ router.get('/', authenticateToken, async (req, res) => {
 // Save artwork to gallery
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const { dataURL, timestamp, drawingData, textItemsData, shapeItemsData, name } = req.body;
+    const { dataURL, timestamp, drawingData, textItemsData, shapeItemsData } = req.body;
     
     const galleryItem = await supabaseService.saveToGallery(
       req.user.id,
@@ -45,8 +45,7 @@ router.post('/', authenticateToken, async (req, res) => {
       timestamp,
       drawingData,
       textItemsData,
-      shapeItemsData,
-      name
+      shapeItemsData
     );
     
     res.status(201).json(galleryItem);
