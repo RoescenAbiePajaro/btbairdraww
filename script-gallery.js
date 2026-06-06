@@ -3,6 +3,10 @@
 // SAVE / GALLERY
 // ═══════════════════════════════════════════════════════
 document.getElementById('saveBtn').addEventListener('click', openSaveAsModal);
+document.getElementById('overwriteBtn').addEventListener('click', () => {
+  state.isOverwriting = true;
+  showScreen('gallery');
+});
 
 // ─── SAVE AS MODAL ───────────────────────────────────────
 const saveAsModal    = document.getElementById('saveAsModal');
@@ -461,9 +465,12 @@ function renderGallery() {
       </div>
       <div class="gallery-timestamp" style="font-size:0.65rem;color:var(--muted);padding:2px 8px 4px;text-align:left;">${item.timestamp || ''}</div>
       <div class="gallery-actions">
-        <button class="view-btn" data-id="${item.id}">👁View</button>
-        <button class="load-btn" data-id="${item.id}">📂Load</button>
-        <button class="dl-btn" data-id="${item.id}" data-type="png">PNG</button>
+        ${state.isOverwriting ? 
+          `<button class="overwrite-action-btn" data-id="${item.id}" style="width:100%; background:#9333ea; color:#fff; font-weight:bold; border:none; border-radius:4px;font-family:'Segoe UI',sans-serif;font-size:.7rem; padding:6px; cursor:pointer;">Overwrite This</button>` : 
+          `<button class="view-btn" data-id="${item.id}">👁View</button>
+           <button class="load-btn" data-id="${item.id}">📂Load</button>
+           <button class="dl-btn" data-id="${item.id}" data-type="png">PNG</button>`
+        }
       </div>
     `;
     galleryGrid.appendChild(card);
@@ -483,6 +490,20 @@ function renderGallery() {
       }
       updateExportButton();
       updateSelectAllCheckbox();
+    });
+  });
+
+  // Overwrite action handler
+  galleryGrid.querySelectorAll('.overwrite-action-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = parseInt(btn.dataset.id);
+      const item = state.gallery.find(g => g.id === id);
+      if (item) {
+        if (confirm(`Are you sure you want to overwrite "${item.name}"?`)) {
+          overwriteArtwork(item);
+        }
+      }
     });
   });
 
@@ -604,6 +625,119 @@ async function downloadItem(item, type) {
     console.error(e);
   }
   hideLoading();
+}
+
+async function overwriteArtwork(existingItem) {
+  showLoading(`Overwriting "${existingItem.name}"…`);
+  
+  // Flash
+  saveFlash.style.opacity = '1';
+  setTimeout(() => saveFlash.style.opacity = '0', 200);
+
+  const w = drawCanvas.width, h = drawCanvas.height;
+  const offscreen = document.createElement('canvas');
+  offscreen.width = w; offscreen.height = h;
+  const ctx = offscreen.getContext('2d');
+
+  // 1. Template image background
+  ctx.drawImage(templateImg, 0, 0, w, h);
+
+  // 2. Drawing
+  ctx.drawImage(drawCanvas, 0, 0);
+
+  // 3. Shape items
+  state.shapeItems.filter(s => s.isPlaced).forEach(item => {
+    ctx.strokeStyle = item.color;
+    ctx.lineWidth = state.brushSize;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    if (item.type === 'square') {
+      const size = Math.max(item.width, item.height);
+      ctx.strokeRect(item.x, item.y, size, size);
+    } else if (item.type === 'rectangle') {
+      ctx.strokeRect(item.x, item.y, item.width, item.height);
+    } else if (item.type === 'triangle') {
+      ctx.beginPath();
+      ctx.moveTo(item.x + item.width / 2, item.y);
+      ctx.lineTo(item.x + item.width, item.y + item.height);
+      ctx.lineTo(item.x, item.y + item.height);
+      ctx.closePath();
+      ctx.stroke();
+    } else if (item.type === 'circle') {
+      const radius = Math.min(item.width, item.height) / 2;
+      const cx = item.x + item.width / 2;
+      const cy = item.y + item.height / 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  });
+
+  // 4. Text items
+  state.textItems.forEach(item => {
+    ctx.font = 'bold 28px Segoe UI, sans-serif';
+    ctx.fillStyle = item.color;
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowBlur = 8;
+    ctx.fillText(item.text, item.x, item.y + 28);
+    ctx.shadowBlur = 0;
+  });
+
+  const dataURL = offscreen.toDataURL('image/png');
+  const ts = new Date().toLocaleString();
+  
+  // Save full state for loading back
+  const drawingData = drawCanvas.toDataURL();
+  const textItemsData = state.textItems.map(item => ({
+    id: item.id,
+    text: item.text,
+    x: item.x,
+    y: item.y,
+    color: item.color
+  }));
+  const shapeItemsData = state.shapeItems.filter(s => s.isPlaced).map(item => ({
+    id: item.id,
+    type: item.type,
+    x: item.x,
+    y: item.y,
+    width: item.width,
+    height: item.height,
+    color: item.color,
+    isPlaced: item.isPlaced
+  }));
+  
+  try {
+    // Update on server
+    await updateArtworkOnServer(existingItem.id, {
+      dataURL,
+      timestamp: ts,
+      drawingData,
+      textItemsData,
+      shapeItemsData
+    });
+    
+    // Update local state
+    const index = state.gallery.findIndex(g => g.id === existingItem.id);
+    if (index !== -1) {
+      state.gallery[index] = { 
+        ...state.gallery[index],
+        dataURL, 
+        timestamp: ts,
+        drawingData,
+        textItemsData,
+        shapeItemsData
+      };
+    }
+    
+    hideLoading();
+    showToast('Artwork overwritten! ✓');
+    showScreen('main');
+  } catch (error) {
+    console.error('Failed to overwrite artwork:', error);
+    hideLoading();
+    showToast('Failed to overwrite artwork: ' + error.message);
+  }
 }
 
 async function loadArtwork(item) {
@@ -1264,6 +1398,23 @@ function showScreen(name) {
   [splash, mainScreen, galleryScreen].forEach(s => s.classList.add('hidden'));
   const map = { splash, main:mainScreen, gallery:galleryScreen };
   map[name].classList.remove('hidden');
+  
+  // Reset overwrite mode if leaving gallery
+  if (name !== 'gallery') {
+    state.isOverwriting = false;
+  }
+  
+  // Update gallery title based on mode
+  const galleryTitle = document.querySelector('.gallery-title');
+  if (galleryTitle && currentUser) {
+    if (state.isOverwriting) {
+      galleryTitle.textContent = 'Select artwork to overwrite';
+      galleryTitle.style.color = '#fff';
+    } else {
+      galleryTitle.textContent = `${currentUser.fullName}'s Gallery`;
+      galleryTitle.style.color = '';
+    }
+  }
   
   // Hide/show main screen elements based on active screen
   const mainElements = [drawCanvas, handCanvas, templateCanvas, videoEl, cursorDot, eraserRing, eraseFlash, 

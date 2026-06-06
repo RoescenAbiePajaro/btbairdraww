@@ -198,6 +198,31 @@ async function renameArtworkOnServer(artworkId, newName) {
   }
 }
 
+// Update artwork on server (full update)
+async function updateArtworkOnServer(artworkId, artworkData) {
+  try {
+    const response = await authenticatedFetch(`https://btbairdraww.onrender.com/api/gallery/${artworkId}`, {
+      method: 'PUT',
+      body: JSON.stringify(artworkData)
+    });
+
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      throw new Error(`Server error (${response.status}). The backend may need to be redeployed.`);
+    }
+
+    const data = await response.json();
+    if (!response.ok) {
+      showToast('Failed to update: ' + data.error);
+      throw new Error(data.error);
+    }
+    return data;
+  } catch (error) {
+    console.error('Error updating artwork:', error);
+    throw error;
+  }
+}
+
 // Make functions globally available
 window.currentUser = currentUser;
 window.authToken = authToken;
@@ -206,4 +231,5 @@ window.loadUserGallery = loadUserGallery;
 window.saveArtworkToServer = saveArtworkToServer;
 window.deleteArtworkFromServer = deleteArtworkFromServer;
 window.renameArtworkOnServer = renameArtworkOnServer;
+window.updateArtworkOnServer = updateArtworkOnServer;
 window.authenticatedFetch = authenticatedFetch;

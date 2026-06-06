@@ -35,6 +35,7 @@ const state = {
   undoStack: [],        // History states for undo
   redoStack: [],        // History states for redo
   maxHistory: 50,       // Maximum history states
+  isOverwriting: false, // Track if we are in overwrite mode
   // Pagination state
   galleryCurrentPage: 1,
   galleryItemsPerPage: 12,
