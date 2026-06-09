@@ -979,12 +979,18 @@ async function exportAsPDFWithOCR(items) {
   
   const { jsPDF } = window.jspdf;
   
-  // Create a single PDF for all items
-  const pdf = new jsPDF({ orientation:'portrait', unit:'px', format:'a4' });
+  // Create a single PDF for all items with explicit A4 dimensions
   const a4Width = 595.28;
   const a4Height = 841.89;
+  const pdf = new jsPDF({ 
+    orientation: 'portrait', 
+    unit: 'px', 
+    format: [a4Width, a4Height]
+  });
   const margin = 50;
   const contentWidth = a4Width - (margin * 2);
+  
+  let isFirstPage = true; // Track if we need to use the default first page
   
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
@@ -1010,7 +1016,8 @@ async function exportAsPDFWithOCR(items) {
       
       // PAGE 1: Text page (if text exists)
       if (hasTextContent && extractedText.trim().length > 0) {
-        if (i > 0) pdf.addPage([a4Width, a4Height]); // Add new page for text (except first item)
+        if (!isFirstPage) pdf.addPage([a4Width, a4Height]); // Add new page for text (except first page)
+        isFirstPage = false;
         
         // Add header
         pdf.setFontSize(20);
@@ -1042,10 +1049,14 @@ async function exportAsPDFWithOCR(items) {
             pdf.text(line, margin, currentY + (index * 18));
           }
         });
+        
+        // PAGE 2: Image page (only add new page if text was added)
+        pdf.addPage([a4Width, a4Height]);
+      } else {
+        // No text content - add page for image only (except for first page which uses default first page)
+        if (!isFirstPage) pdf.addPage([a4Width, a4Height]);
+        isFirstPage = false;
       }
-      
-      // PAGE 2: Image page
-      pdf.addPage([a4Width, a4Height]);
       
       // Add header for image page
       pdf.setFontSize(20);
