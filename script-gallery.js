@@ -464,6 +464,7 @@ function renderGallery() {
         <button class="view-btn" data-id="${item.id}">👁View</button>
         <button class="load-btn" data-id="${item.id}">📂Load</button>
         <button class="dl-btn" data-id="${item.id}" data-type="png">PNG</button>
+        <button class="dl-btn" data-id="${item.id}" data-type="docx">WORD</button>
       </div>
     `;
     galleryGrid.appendChild(card);
@@ -597,6 +598,9 @@ async function downloadItem(item, type) {
 
     } else if (type === 'pptx') {
       await exportPPTX(item);
+      
+    } else if (type === 'docx') {
+      await exportSingleWordDoc(item);
     }
     showToast(`Downloaded as ${type.toUpperCase()}!`);
   } catch(e) {
@@ -814,6 +818,8 @@ async function exportSelectedItems(items, format) {
       await exportAsPDFWithOCR(items);
     } else if (format === 'pptx') {
       await exportAsPPTXMultiple(items);
+    } else if (format === 'docx') {
+      await exportAsWordMultiple(items);
     }
     showToast(`Exported ${items.length} items as ${format.toUpperCase()}!`);
   } catch(e) {
@@ -1264,6 +1270,402 @@ xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   const a = document.createElement('a');
   a.href = url;
   a.download = `airdraw-multiple-${Date.now()}.pptx`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+
+async function exportAsWordMultiple(items) {
+  const JSZip = window.JSZip;
+  const zip = new JSZip();
+  
+  // Create Word document structure
+  // Add content types
+  zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Default Extension="png" ContentType="image/png"/>
+  <Default Extension="jpeg" ContentType="image/jpeg"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>`);
+  
+  // Add _rels/.rels
+  zip.folder('_rels').file('.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`);
+  
+  // Build document.xml content
+  let documentContent = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+            xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+  <w:body>`;
+  
+  // Add document relationships
+  let docRelsContent = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`;
+  
+  // Process each item
+  const mediaFolder = zip.folder('word/media');
+  
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const imageId = i + 1;
+    
+    // Add title
+    documentContent += `
+    <w:p>
+      <w:pPr>
+        <w:jc w:val="center"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:b/>
+          <w:sz w:val="32"/>
+        </w:rPr>
+        <w:t>Beyond The Brush - Artwork ${imageId}</w:t>
+      </w:r>
+    </w:p>`;
+    
+    // Add extracted text if available
+    if (item.textItemsData && item.textItemsData.length > 0) {
+      const sortedTexts = [...item.textItemsData].sort((a, b) => {
+        if (Math.abs(a.y - b.y) < 30) {
+          return a.x - b.x;
+        }
+        return a.y - b.y;
+      });
+      
+      const extractedText = sortedTexts.map(textItem => textItem.text).join(' ');
+      
+      documentContent += `
+    <w:p>
+      <w:pPr>
+        <w:spacing w:before="240" w:after="120"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:b/>
+          <w:sz w:val="24"/>
+        </w:rPr>
+        <w:t>Extracted Text:</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:spacing w:after="240"/>
+      </w:pPr>
+      <w:r>
+        <w:t xml:space="preserve">${extractedText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</w:t>
+      </w:r>
+    </w:p>`;
+    }
+    
+    // Fetch and add image
+    let imgData;
+    let imgExtension = 'png';
+    let imageDataURL = item.dataURL;
+    
+    if (item.dataURL.startsWith('http')) {
+      const response = await fetch(item.dataURL);
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      imgData = arrayBuffer;
+      // Convert to base64 for image loading
+      imageDataURL = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+      });
+    } else {
+      imgData = item.dataURL.split(',')[1];
+    }
+    
+    // Load image to get actual dimensions
+    const img = new Image();
+    img.src = imageDataURL;
+    await new Promise(resolve => {
+      if (img.complete) resolve();
+      else img.onload = resolve;
+    });
+    
+    mediaFolder.file(`image${imageId}.${imgExtension}`, imgData, {base64: !item.dataURL.startsWith('http')});
+    
+    // Add image relationship
+    docRelsContent += `
+  <Relationship Id="rId${imageId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image${imageId}.${imgExtension}"/>`;
+    
+    // Calculate image dimensions to fit within page (similar to PDF)
+    // Page content width in EMUs: ~6.5 inches = 5943600 EMUs
+    const maxWidth = 5500000; // ~6 inches
+    const maxHeight = 4500000; // ~5 inches max height
+    
+    // Calculate dimensions maintaining aspect ratio
+    let imageWidth = maxWidth;
+    let imageHeight = (imageWidth / (img.naturalWidth || 1280)) * (img.naturalHeight || 720);
+    
+    if (imageHeight > maxHeight) {
+      imageHeight = maxHeight;
+      imageWidth = (maxHeight / imageHeight) * imageWidth;
+    }
+    
+    documentContent += `
+    <w:p>
+      <w:pPr>
+        <w:jc w:val="center"/>
+        <w:spacing w:after="240"/>
+      </w:pPr>
+      <w:r>
+        <w:drawing>
+          <wp:inline distT="0" distB="0" distL="0" distR="0">
+            <wp:extent cx="${imageWidth}" cy="${imageHeight}"/>
+            <wp:effectExtent l="0" t="0" r="0" b="0"/>
+            <wp:docPr id="${imageId}" name="Picture ${imageId}"/>
+            <wp:cNvGraphicFramePr>
+              <a:graphicFrameLocks noChangeAspect="1"/>
+            </wp:cNvGraphicFramePr>
+            <a:graphic>
+              <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                <pic:pic>
+                  <pic:nvPicPr>
+                    <pic:cNvPr id="${imageId}" name="Picture ${imageId}"/>
+                    <pic:cNvPicPr/>
+                  </pic:nvPicPr>
+                  <pic:blipFill>
+                    <a:blip r:embed="rId${imageId}"/>
+                    <a:stretch>
+                      <a:fillRect/>
+                    </a:stretch>
+                  </pic:blipFill>
+                  <pic:spPr>
+                    <a:xfrm>
+                      <a:off x="0" y="0"/>
+                      <a:ext cx="${imageWidth}" cy="${imageHeight}"/>
+                    </a:xfrm>
+                    <a:prstGeom prst="rect">
+                      <a:avLst/>
+                    </a:prstGeom>
+                  </pic:spPr>
+                </pic:pic>
+              </a:graphicData>
+            </a:graphic>
+          </wp:inline>
+        </w:drawing>
+      </w:r>
+    </w:p>`;
+    
+    // Add page break between items (except after last item)
+    if (i < items.length - 1) {
+      documentContent += `
+    <w:p>
+      <w:r>
+        <w:br w:type="page"/>
+      </w:r>
+    </w:p>`;
+    }
+  }
+  
+  // Close document
+  documentContent += `
+  </w:body>
+</w:document>`;
+  
+  // Close relationships
+  docRelsContent += `
+</Relationships>`;
+  
+  // Add files to zip
+  zip.folder('word').file('document.xml', documentContent);
+  zip.folder('word/_rels').file('document.xml.rels', docRelsContent);
+  
+  // Generate and download
+  const blob = await zip.generateAsync({type: 'blob'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `beyond-the-brush-${Date.now()}.docx`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+
+async function exportSingleWordDoc(item) {
+  const JSZip = window.JSZip;
+  const zip = new JSZip();
+  
+  // Create Word document structure
+  zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Default Extension="png" ContentType="image/png"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>`);
+  
+  zip.folder('_rels').file('.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`);
+  
+  // Build document content
+  let documentContent = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+            xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+  <w:body>
+    <w:p>
+      <w:pPr>
+        <w:jc w:val="center"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:b/>
+          <w:sz w:val="32"/>
+        </w:rPr>
+        <w:t>Beyond The Brush</w:t>
+      </w:r>
+    </w:p>`;
+  
+  // Add extracted text if available
+  if (item.textItemsData && item.textItemsData.length > 0) {
+    const sortedTexts = [...item.textItemsData].sort((a, b) => {
+      if (Math.abs(a.y - b.y) < 30) {
+        return a.x - b.x;
+      }
+      return a.y - b.y;
+    });
+    
+    const extractedText = sortedTexts.map(textItem => textItem.text).join(' ');
+    
+    documentContent += `
+    <w:p>
+      <w:pPr>
+        <w:spacing w:before="240" w:after="120"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:b/>
+          <w:sz w:val="24"/>
+        </w:rPr>
+        <w:t>Extracted Text:</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:spacing w:after="240"/>
+      </w:pPr>
+      <w:r>
+        <w:t xml:space="preserve">${extractedText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</w:t>
+      </w:r>
+    </w:p>`;
+  }
+  
+  // Fetch and add image
+  let imgData;
+  let imageDataURL = item.dataURL;
+  
+  if (item.dataURL.startsWith('http')) {
+    const response = await fetch(item.dataURL);
+    const blob = await response.blob();
+    const arrayBuffer = await blob.arrayBuffer();
+    imgData = arrayBuffer;
+    // Convert to base64 for image loading
+    imageDataURL = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.readAsDataURL(blob);
+    });
+  } else {
+    imgData = item.dataURL.split(',')[1];
+  }
+  
+  // Load image to get actual dimensions
+  const img = new Image();
+  img.src = imageDataURL;
+  await new Promise(resolve => {
+    if (img.complete) resolve();
+    else img.onload = resolve;
+  });
+  
+  zip.folder('word/media').file('image1.png', imgData, {base64: !item.dataURL.startsWith('http')});
+  
+  // Add relationship
+  const docRelsContent = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image1.png"/>
+</Relationships>`;
+  
+  // Calculate image dimensions to fit within page (similar to PDF)
+  const maxWidth = 5500000; // ~6 inches
+  const maxHeight = 4500000; // ~5 inches max height
+  
+  let imageWidth = maxWidth;
+  let imageHeight = (imageWidth / (img.naturalWidth || 1280)) * (img.naturalHeight || 720);
+  
+  if (imageHeight > maxHeight) {
+    imageHeight = maxHeight;
+    imageWidth = (maxHeight / imageHeight) * imageWidth;
+  }
+  
+  documentContent += `
+    <w:p>
+      <w:pPr>
+        <w:jc w:val="center"/>
+        <w:spacing w:after="240"/>
+      </w:pPr>
+      <w:r>
+        <w:drawing>
+          <wp:inline distT="0" distB="0" distL="0" distR="0">
+            <wp:extent cx="${imageWidth}" cy="${imageHeight}"/>
+            <wp:effectExtent l="0" t="0" r="0" b="0"/>
+            <wp:docPr id="1" name="Picture 1"/>
+            <wp:cNvGraphicFramePr>
+              <a:graphicFrameLocks noChangeAspect="1"/>
+            </wp:cNvGraphicFramePr>
+            <a:graphic>
+              <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                <pic:pic>
+                  <pic:nvPicPr>
+                    <pic:cNvPr id="1" name="Picture 1"/>
+                    <pic:cNvPicPr/>
+                  </pic:nvPicPr>
+                  <pic:blipFill>
+                    <a:blip r:embed="rId1"/>
+                    <a:stretch>
+                      <a:fillRect/>
+                    </a:stretch>
+                  </pic:blipFill>
+                  <pic:spPr>
+                    <a:xfrm>
+                      <a:off x="0" y="0"/>
+                      <a:ext cx="${imageWidth}" cy="${imageHeight}"/>
+                    </a:xfrm>
+                    <a:prstGeom prst="rect">
+                      <a:avLst/>
+                    </a:prstGeom>
+                  </pic:spPr>
+                </pic:pic>
+              </a:graphicData>
+            </a:graphic>
+          </wp:inline>
+        </w:drawing>
+      </w:r>
+    </w:p>
+  </w:body>
+</w:document>`;
+  
+  zip.folder('word').file('document.xml', documentContent);
+  zip.folder('word/_rels').file('document.xml.rels', docRelsContent);
+  
+  const blob = await zip.generateAsync({type: 'blob'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `airdraw-${item.id}.docx`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 3000);
 }
